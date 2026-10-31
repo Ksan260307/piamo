@@ -1,0 +1,54 @@
+# Unity
+unity/[Ll]ibrary/
+unity/[Tt]emp/
+unity/[Oo]bj/
+unity/[Bb]uild/
+unity/[Bb]uilds/
+unity/[Ll]ogs/
+unity/[Uu]ser[Ss]ettings/
+unity/[Mm]emoryCaptures/
+unity/[Rr]ecordings/
+unity/.vs/
+unity/.idea/
+unity/*.csproj
+unity/*.sln
+unity/*.slnx
+unity/*.suo
+unity/*.user
+unity/*.pidb
+unity/*.booproj
+unity/*.svd
+unity/*.pdb
+unity/*.mdb
+unity/*.opendb
+unity/*.VC.db
+unity/sysinfo.txt
+unity/crashlytics-build.properties
+
+# Unity が生成するもの（Burst のビルド）
+unity/Data/
+
+# Unity Test Runner の一時シーン
+unity/Assets/InitTestScene*
+
+# Blender
+*.blend1
+blender/previews/
+
+# ローカルのビルド・テストの出力（公開用は docs/）
+/WebGLBuild/
+/build-tmp/
+
+# 生成のための キャッシュと確認用の絵
+tools/.cache/
+tools/previews/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+
+# ローカル開発用
+.claude/

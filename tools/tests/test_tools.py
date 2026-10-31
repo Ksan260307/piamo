@@ -1,0 +1,262 @@
+"""
+tools/ のスクリプトの単体テスト（音の合成・スタンプ・アイコン・フォント・ビルド検査）。
+  python -m unittest discover -s tools/tests -v
+"""
+import importlib.util
+import io
+import json
+import os
+import shutil
+import sys
+import tempfile
+import unittest
+import wave
+from contextlib import redirect_stdout
+
+import numpy as np
+from PIL import Image
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+TOOLS = os.path.abspath(os.path.join(HERE, ".."))
+ROOT = os.path.abspath(os.path.join(TOOLS, ".."))
+sys.path.insert(0, TOOLS)
+
+
+def load(name):
+    spec = importlib.util.spec_from_file_location(name, os.path.join(TOOLS, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+audio = load("make_audio")
+stamps = load("make_stamps")
+check = load("check_build")
+fonts = load("make_fonts")
+
+
+def peak_freq(x, sr):
+    """いちばん強い周波数（倍音ではなく基音を見つけるため、低い方から探す）。"""
+    n = len(x)
+    win = np.hanning(n)
+    spec = np.abs(np.fft.rfft(x * win, n * 4))
+    freqs = np.fft.rfftfreq(n * 4, 1 / sr)
+    return freqs[int(np.argmax(spec))]
+
+
+class AudioTests(unittest.TestCase):
+    def test_midi_a4_is_440(self):
+        self.assertAlmostEqual(audio.midi(69), 440.0)
+        self.assertAlmostEqual(audio.midi(60), 261.6256, places=3)
+
+    def test_root_notes_cover_keyboard_range(self):
+        # C1〜C8 のどの音も、近い音から ±2 半音以内で鳴らせる
+        roots = audio.ROOT_NOTES
+        for n in range(24, 109):
+            self.assertLessEqual(min(abs(r - n) for r in roots), audio.MAX_SHIFT, n)
+
+    def test_piano_pitch_is_right(self):
+        for note in (48, 60, 72):
+            x = audio.piano(note, 32000)
+            seg = x[int(0.05 * 32000): int(0.45 * 32000)]
+            f = peak_freq(seg, 32000)
+            self.assertAlmostEqual(f / audio.midi(note), 1.0, delta=0.02, msg=f"note {note}: {f}Hz")
+
+    def test_all_instruments_in_tune(self):
+        # 生成した音のファイルの、基音のあたりで いちばん強い周波数（どうぶつの声も、のばしている ところの高さ）
+        folder = os.path.join(ROOT, "unity", "Assets", "Audio", "Instruments")
+        for name, fn, sr, loop in audio.INSTRUMENTS:
+            for note in (48, 60, 72):
+                with wave.open(os.path.join(folder, name, f"{name}_{note:03d}.wav")) as w:
+                    rate = w.getframerate()
+                    x = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float64)
+                seg = x[int(0.03 * rate): int(0.53 * rate)]
+                n = len(seg)
+                spec = np.abs(np.fft.rfft(seg * np.hanning(n), n * 8))
+                fr = np.fft.rfftfreq(n * 8, 1 / rate)
+                expect = audio.midi(note)
+                band = (fr > expect * 0.8) & (fr < expect * 1.25)
+                cents = 1200 * np.log2(fr[band][np.argmax(spec[band])] / expect)
+                self.assertLess(abs(cents), 10, f"{name} {note}: {cents:+.1f} セント")
+
+    def test_percussive_instruments_decay(self):
+        for name, fn, sr, loop in audio.INSTRUMENTS:
+            if loop or name in ("cat", "dog"):   # ループの音と、どうぶつの声はのぞく
+                continue
+            x = fn(60, sr)
+            head = np.sqrt(np.mean(x[: int(0.2 * sr)] ** 2))
+            tail = np.sqrt(np.mean(x[-int(0.1 * sr):] ** 2))
+            self.assertGreater(head, tail * 4, name)
+            self.assertLess(abs(x[-1]), 0.02, f"{name} の おわりが ぷつっと きれる")
+
+    def test_loops_are_seamless(self):
+        for name, fn, sr, loop in audio.INSTRUMENTS:
+            if not loop:
+                continue
+            for note in (36, 60, 84):
+                x = fn(note, sr)
+                x = x / np.max(np.abs(x))
+                # ループのつなぎ目の段差が、ふだんの となりどうしの差と同じくらい
+                step = np.max(np.abs(np.diff(x)))
+                self.assertLess(abs(x[0] - x[-1]), step * 1.6, f"{name} {note}")
+
+    def test_loop_length_has_whole_cycles(self):
+        n, f = audio.loop_length(261.63, 24000, 0.5)
+        cycles = f * n / 24000
+        self.assertAlmostEqual(cycles, round(cycles), places=6)
+        self.assertAlmostEqual(f / 261.63, 1.0, delta=0.002)
+
+    def test_generated_instrument_files(self):
+        folder = os.path.join(ROOT, "unity", "Assets", "Audio", "Instruments")
+        for name, fn, sr, loop in audio.INSTRUMENTS:
+            for note in audio.ROOT_NOTES:
+                path = os.path.join(folder, name, f"{name}_{note:03d}.wav")
+                self.assertTrue(os.path.exists(path), path)
+            with wave.open(os.path.join(folder, name, f"{name}_060.wav")) as w:
+                self.assertEqual(w.getframerate(), sr)
+                self.assertEqual(w.getnchannels(), 1)
+
+    def test_sfx_files(self):
+        for n in ("tap", "back", "open", "stamp", "stamp_big", "success", "clear", "oops", "hint", "earn", "page", "listen"):
+            self.assertTrue(os.path.exists(os.path.join(ROOT, "unity", "Assets", "Audio", "Sfx", n + ".wav")), n)
+
+
+class StampTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.plans = stamps.plan()
+
+    def test_there_are_365(self):
+        self.assertEqual(len(self.plans), 365)
+        self.assertEqual([p["no"] for p in self.plans], list(range(1, 366)))
+
+    def test_every_fifth_is_big(self):
+        for p in self.plans:
+            self.assertEqual(p["big"], p["no"] % 5 == 0, p["no"])
+        self.assertEqual(sum(p["big"] for p in self.plans), 73)
+
+    def test_designs_are_all_different(self):
+        keys = {(p["species"], p["expr"], p["acc"]) for p in self.plans}
+        self.assertEqual(len(keys), 365)
+        names = [p["name"] for p in self.plans]
+        self.assertEqual(len(set(names)), 365, "スタンプの なまえが かぶっている")
+
+    def test_many_animals(self):
+        self.assertGreaterEqual(len({p["species"] for p in self.plans}), 40)
+        # となりあう スタンプは ちがう どうぶつ
+        for a, b in zip(self.plans, self.plans[1:]):
+            self.assertNotEqual(a["species"], b["species"])
+
+    def test_big_stamps_show_day_number(self):
+        for p in self.plans:
+            if p["big"]:
+                self.assertEqual(p["label"], f"{p['no']}にちめ")
+
+    def test_render_is_square_and_not_empty(self):
+        for p in (self.plans[0], self.plans[4]):
+            img = stamps.render_stamp(p)
+            self.assertEqual(img.width, img.height)
+            self.assertEqual(img.width, stamps.BIG_SIZE if p["big"] else stamps.SIZE)
+            a = np.asarray(img)[..., 3]
+            self.assertGreater((a > 200).mean(), 0.45)
+            # 四すみは すきとおっている（スタンプの形）
+            self.assertEqual(a[0, 0], 0)
+
+    def test_generated_files(self):
+        folder = os.path.join(ROOT, "unity", "Assets", "StreamingAssets", "Stamps")
+        for n in range(1, 366):
+            self.assertTrue(os.path.exists(os.path.join(folder, f"stamp_{n:03d}.png")), n)
+        with open(os.path.join(ROOT, "unity", "Assets", "Resources", "stamps.json"), encoding="utf-8") as f:
+            data = json.load(f)["stamps"]
+        self.assertEqual(len(data), 365)
+        self.assertTrue(all(d["name"] for d in data))
+
+    def test_characters_for_songs_and_menu(self):
+        folder = os.path.join(ROOT, "unity", "Assets", "UI", "Characters")
+        for name in ("owl", "frog", "sheep", "rabbit", "dog", "lion", "duck", "penguin", "cat", "bear", "panda", "chick", "monkey", "elephant", "bird"):
+            self.assertTrue(os.path.exists(os.path.join(folder, name + ".png")), name)
+
+
+class FontTests(unittest.TestCase):
+    def test_font_covers_app_text(self):
+        from fontTools.ttLib import TTFont
+        text = fonts.collect_text()
+        for name in ("PiamoRounded-ExtraBold.ttf", "PiamoRounded-Black.ttf"):
+            path = os.path.join(ROOT, "unity", "Assets", "UI", "Fonts", name)
+            self.assertTrue(os.path.exists(path), path)
+            cmap = TTFont(path).getBestCmap()
+            missing = [c for c in text if ord(c) not in cmap and c.strip() and ord(c) < 0xFFF0 and not (0xFF00 <= ord(c) <= 0xFFEF)
+                       and not (0x3000 <= ord(c) <= 0x30FF)]
+            # 漢字やかなで フォントにない字は、画面で とうふ（□）になる
+            missing = [c for c in missing if ord(c) >= 0x3000 or c in "♪♯"]
+            self.assertEqual(missing, [], f"{name} に ない字: {''.join(missing)}")
+
+
+class IconTests(unittest.TestCase):
+    def test_icons_exist(self):
+        folder = os.path.join(ROOT, "unity", "Assets", "UI", "Icons")
+        icons = load("make_icons")
+        for name in icons.ICONS:
+            p = os.path.join(folder, name + ".png")
+            self.assertTrue(os.path.exists(p), name)
+            with Image.open(p) as im:
+                self.assertEqual(im.size, (128, 128))
+        for n in ("icon.png", "favicon.png", "logo.png"):
+            self.assertTrue(os.path.exists(os.path.join(ROOT, "unity", "Assets", "WebGLTemplates", "Piamo", n)), n)
+
+
+class CheckBuildTests(unittest.TestCase):
+    def make_site(self, d, jslib=True, stamps_count=365):
+        os.makedirs(os.path.join(d, "Build"))
+        os.makedirs(os.path.join(d, "StreamingAssets", "Stamps"))
+        for n in ("WebGL.loader.js", "WebGL.data.gz", "WebGL.wasm.gz"):
+            open(os.path.join(d, "Build", n), "wb").write(b"x")
+        with open(os.path.join(d, "Build", "WebGL.framework.js.gz"), "wb") as f:
+            import gzip
+            f.write(gzip.compress(b"function PiamoLocalDate(){}" if jslib else b"nothing"))
+        with open(os.path.join(d, "index.html"), "w", encoding="utf-8") as f:
+            f.write('<script>const loaderUrl = buildUrl + "/WebGL.loader.js";</script>')
+        for n in ("manifest.webmanifest", "icon.png", "favicon.png", "logo.png"):
+            open(os.path.join(d, n), "wb").write(b"x")
+        for i in range(1, stamps_count + 1):
+            open(os.path.join(d, "StreamingAssets", "Stamps", f"stamp_{i:03d}.png"), "wb").write(b"x")
+
+    def run_check(self, d):
+        argv = sys.argv
+        sys.argv = ["check_build.py", d]
+        try:
+            with redirect_stdout(io.StringIO()):
+                check.main()
+            return True
+        except SystemExit:
+            return False
+        finally:
+            sys.argv = argv
+
+    def test_good_site_passes(self):
+        d = tempfile.mkdtemp()
+        try:
+            self.make_site(d)
+            self.assertTrue(self.run_check(d))
+        finally:
+            shutil.rmtree(d)
+
+    def test_missing_jslib_fails(self):
+        d = tempfile.mkdtemp()
+        try:
+            self.make_site(d, jslib=False)
+            self.assertFalse(self.run_check(d))
+        finally:
+            shutil.rmtree(d)
+
+    def test_missing_stamps_fails(self):
+        d = tempfile.mkdtemp()
+        try:
+            self.make_site(d, stamps_count=300)
+            self.assertFalse(self.run_check(d))
+        finally:
+            shutil.rmtree(d)
+
+
+if __name__ == "__main__":
+    unittest.main()

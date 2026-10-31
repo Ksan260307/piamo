@@ -1,0 +1,12 @@
+{
+  "name": "ぴあも — Piamo",
+  "short_name": "ぴあも",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#fff7ec",
+  "theme_color": "#ffe9f0",
+  "icons": [
+    { "src": "icon.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }
+  ]
+}

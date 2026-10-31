@@ -1,0 +1,207 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="Main.uss" />
+    <ui:VisualElement name="root" class="root" picking-mode="Ignore">
+
+        <!-- ===================== メニュー ===================== -->
+        <ui:VisualElement name="menu" class="screen screen-bg">
+            <ui:VisualElement name="menu-friends" class="fill" picking-mode="Ignore" />
+            <ui:VisualElement name="menu-body" class="menu-body" picking-mode="Ignore">
+                <ui:VisualElement name="menu-logo" class="menu-logo" picking-mode="Ignore" />
+                <ui:Label name="menu-today" class="menu-today" text="" picking-mode="Ignore" />
+                <ui:VisualElement class="menu-buttons" picking-mode="Ignore">
+                    <ui:Button name="btn-play" class="candy candy--pink menu-button">
+                        <ui:VisualElement name="btn-play-icon" class="candy__icon" picking-mode="Ignore" />
+                        <ui:Label text="ピアノで あそぶ" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                    <ui:Button name="btn-stamps" class="candy candy--yellow menu-button">
+                        <ui:VisualElement name="btn-stamps-icon" class="candy__icon" picking-mode="Ignore" />
+                        <ui:Label text="スタンプちょう" class="candy__label" picking-mode="Ignore" />
+                        <ui:Label name="stamp-badge" text="!" class="badge hidden" picking-mode="Ignore" />
+                    </ui:Button>
+                    <ui:Button name="btn-settings" class="candy candy--blue menu-button">
+                        <ui:VisualElement name="btn-settings-icon" class="candy__icon" picking-mode="Ignore" />
+                        <ui:Label text="せってい" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ===================== ピアノで あそぶ ===================== -->
+        <ui:VisualElement name="play" class="screen play" picking-mode="Ignore">
+            <ui:VisualElement name="play-top" class="topbar" picking-mode="Ignore">
+                <ui:Button name="play-back" class="candy candy--white back-button">
+                    <ui:VisualElement name="play-back-icon" class="candy__icon" picking-mode="Ignore" />
+                    <ui:Label text="もどる" class="candy__label" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:VisualElement name="mode-tabs" class="mode-tabs">
+                    <ui:Button name="tab-free" text="じゆうに ひく" class="tab" />
+                    <ui:Button name="tab-mimic" text="まねっこ" class="tab" />
+                </ui:VisualElement>
+                <ui:Button name="play-settings" class="candy candy--blue round-button">
+                    <ui:VisualElement name="play-settings-icon" class="candy__icon" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="stage" class="stage" picking-mode="Ignore">
+                <!-- じゆうに ひく -->
+                <ui:VisualElement name="free-panel" class="free-panel" picking-mode="Ignore">
+                    <ui:VisualElement name="free-mascot" class="mascot" picking-mode="Ignore" />
+                    <ui:Label name="free-bubble" class="bubble" text="すきに ひいてね♪" picking-mode="Ignore" />
+                    <ui:VisualElement class="free-row" picking-mode="Ignore">
+                        <ui:Button name="inst-chip" class="candy candy--white chip">
+                            <ui:VisualElement name="inst-chip-icon" class="candy__icon" picking-mode="Ignore" />
+                            <ui:Label name="inst-chip-label" text="ピアノ" class="candy__label" picking-mode="Ignore" />
+                        </ui:Button>
+                        <ui:VisualElement name="stamp-meter" class="stamp-meter" picking-mode="Ignore">
+                            <ui:VisualElement name="stamp-meter-icon" class="icon stamp-meter__icon" picking-mode="Ignore" />
+                            <ui:Label name="stamp-meter-text" class="stamp-meter__text" text="" picking-mode="Ignore" />
+                            <ui:VisualElement name="stamp-meter-dots" class="meter-dots" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- まねっこ -->
+                <ui:VisualElement name="mimic-panel" class="mimic-panel hidden" picking-mode="Ignore">
+                    <ui:VisualElement name="song-picker" picking-mode="Ignore">
+                        <ui:Label class="picker-title" text="どの きょくを まねっこ する？" picking-mode="Ignore" />
+                        <ui:ScrollView name="song-list" class="song-list" mode="Vertical" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="mimic-game" class="mimic-game hidden" picking-mode="Ignore">
+                        <ui:VisualElement name="teacher" class="teacher" picking-mode="Ignore" />
+                        <ui:VisualElement class="mimic-center" picking-mode="Ignore">
+                            <ui:Label name="mimic-title" class="mimic-title" text="" picking-mode="Ignore" />
+                            <ui:Label name="mimic-bubble" class="bubble" text="" picking-mode="Ignore" />
+                            <ui:VisualElement name="mimic-dots" class="dots" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="mimic-buttons" class="mimic-buttons" picking-mode="Ignore">
+                            <ui:Button name="mimic-replay" class="candy candy--yellow">
+                                <ui:VisualElement name="mimic-replay-icon" class="candy__icon" picking-mode="Ignore" />
+                                <ui:Label name="mimic-replay-label" text="もういちど きく" class="candy__label" picking-mode="Ignore" />
+                            </ui:Button>
+                            <ui:Button name="mimic-change" class="candy candy--white">
+                                <ui:VisualElement name="mimic-change-icon" class="candy__icon" picking-mode="Ignore" />
+                                <ui:Label text="きょくを かえる" class="candy__label" picking-mode="Ignore" />
+                            </ui:Button>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="nav" class="nav hidden" picking-mode="Ignore">
+                <ui:Button name="nav-left" class="candy candy--white round-button">
+                    <ui:VisualElement name="nav-left-icon" class="candy__icon" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:VisualElement name="nav-track" class="nav-track">
+                    <ui:VisualElement name="nav-window" class="nav-window" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:Button name="nav-right" class="candy candy--white round-button">
+                    <ui:VisualElement name="nav-right-icon" class="candy__icon" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="keyboard-area" class="keyboard-area" picking-mode="Ignore">
+                <ui:VisualElement name="key-labels" class="fill" picking-mode="Ignore" />
+                <ui:VisualElement name="fx-layer" class="fill" picking-mode="Ignore" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="earn-banner" class="banner hidden" picking-mode="Ignore">
+                <ui:VisualElement class="banner__card">
+                    <ui:VisualElement name="earn-icon" class="icon banner__icon" picking-mode="Ignore" />
+                    <ui:Label class="banner__text" text="きょうの スタンプが もらえたよ！" picking-mode="Ignore" />
+                    <ui:Button name="earn-go" class="candy candy--yellow">
+                        <ui:Label text="スタンプちょうへ" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                    <ui:Button name="earn-later" class="candy candy--white">
+                        <ui:Label text="あとで" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ===================== スタンプちょう ===================== -->
+        <ui:VisualElement name="stamps" class="screen screen-bg stamps">
+            <ui:VisualElement class="topbar" picking-mode="Ignore">
+                <ui:Button name="stamps-back" class="candy candy--white back-button">
+                    <ui:VisualElement name="stamps-back-icon" class="candy__icon" picking-mode="Ignore" />
+                    <ui:Label text="もどる" class="candy__label" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Label class="topbar__title" text="スタンプちょう" picking-mode="Ignore" />
+                <ui:Label name="stamp-count" class="stamp-count" text="" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:VisualElement class="book" picking-mode="Ignore">
+                <ui:Button name="page-prev" class="candy candy--white round-button">
+                    <ui:VisualElement name="page-prev-icon" class="candy__icon" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:VisualElement name="pages" class="pages" picking-mode="Ignore" />
+                <ui:Button name="page-next" class="candy candy--white round-button">
+                    <ui:VisualElement name="page-next-icon" class="candy__icon" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+            <ui:Label name="page-label" class="page-label" text="" picking-mode="Ignore" />
+            <ui:VisualElement class="stamp-message" picking-mode="Ignore">
+                <ui:Label name="stamp-message" class="bubble" text="" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:VisualElement name="stamp-fx" class="fill" picking-mode="Ignore" />
+            <ui:VisualElement name="celebrate" class="celebrate hidden" picking-mode="Ignore">
+                <ui:Label name="celebrate-text" class="celebrate__text" text="でっかい スタンプ！" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:VisualElement name="detail" class="overlay hidden">
+                <ui:VisualElement class="detail-card">
+                    <ui:VisualElement name="detail-image" class="detail-image" picking-mode="Ignore" />
+                    <ui:Label name="detail-name" class="detail-name" text="" picking-mode="Ignore" />
+                    <ui:Label name="detail-info" class="detail-info" text="" picking-mode="Ignore" />
+                    <ui:Button name="detail-close" class="candy candy--pink">
+                        <ui:Label text="とじる" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ===================== せってい ===================== -->
+        <ui:VisualElement name="settings" class="overlay hidden">
+            <ui:VisualElement class="sheet">
+                <ui:VisualElement class="topbar" picking-mode="Ignore">
+                    <ui:Button name="settings-back" class="candy candy--white back-button">
+                        <ui:VisualElement name="settings-back-icon" class="candy__icon" picking-mode="Ignore" />
+                        <ui:Label text="もどる" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                    <ui:Label class="topbar__title" text="せってい" picking-mode="Ignore" />
+                    <ui:VisualElement style="width: 200px;" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:ScrollView name="settings-scroll" class="settings-scroll" mode="Vertical" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- がっきを えらぶ（ピアノの画面から） -->
+        <ui:VisualElement name="inst-popup" class="overlay hidden">
+            <ui:VisualElement class="popup-card">
+                <ui:Label class="popup-title" text="どの おとに する？" picking-mode="Ignore" />
+                <ui:ScrollView name="inst-popup-scroll" mode="Vertical">
+                    <ui:VisualElement name="inst-popup-grid" class="grid" />
+                </ui:ScrollView>
+                <ui:Button name="inst-popup-close" class="candy candy--pink" style="margin-top: 14px;">
+                    <ui:Label text="とじる" class="candy__label" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- たしかめる -->
+        <ui:VisualElement name="dialog" class="overlay hidden">
+            <ui:VisualElement class="dialog-card">
+                <ui:Label name="dialog-text" class="dialog-text" text="" picking-mode="Ignore" />
+                <ui:VisualElement class="dialog-buttons" picking-mode="Ignore">
+                    <ui:Button name="dialog-no" class="candy candy--white">
+                        <ui:Label name="dialog-no-label" text="やめる" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                    <ui:Button name="dialog-yes" class="candy candy--pink">
+                        <ui:Label name="dialog-yes-label" text="はい" class="candy__label" picking-mode="Ignore" />
+                    </ui:Button>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="toast" class="toast hidden" picking-mode="Ignore">
+            <ui:Label name="toast-text" class="toast__text" text="" picking-mode="Ignore" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

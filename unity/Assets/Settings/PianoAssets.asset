@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df766c9344fec7040a976a0247a36c58, type: 3}
+  m_Name: PianoAssets
+  m_EditorClassIdentifier: Piamo.Runtime::Piamo.PianoAssets
+  whiteFull: {fileID: 8643440012500918027, guid: 0d5d7b8a026359d4fb0914d32703820c, type: 3}
+  whiteLeft: {fileID: 2211410327168474544, guid: 2f5292e8151ab444a9e34d3dca4e8e25, type: 3}
+  whiteRight: {fileID: -6347801792045247887, guid: 4e594bfc1f3b28f40af0e127f7b514fe, type: 3}
+  whiteBoth: {fileID: 4068935197323707860, guid: ebf59d619f6991b4bbb677dcec6039e7, type: 3}
+  black: {fileID: 5361867274365986686, guid: bbba4217341ce90469d18633a8e12cd2, type: 3}
+  caseEndLeft: {fileID: -5044783754271094688, guid: f292a7b73cac00b4c844de0e5fb65a1a, type: 3}
+  caseEndRight: {fileID: 6139518629649046062, guid: 3c163d5e5a385434a87613d97de7b0bd, type: 3}
+  caseBack: {fileID: 5186465422489650208, guid: a341c484793f8934788e2859a92c68b0, type: 3}
+  caseFront: {fileID: -3083672382133883140, guid: d656cb58f734c1c41b36715f63773a5a, type: 3}
+  caseFelt: {fileID: -6013669926136560181, guid: 4ecea9b2f79f0a64da0dd13a6089ce9a, type: 3}
+  caseBed: {fileID: -6214941844680261394, guid: fbb4ec6ad51c9f84f98f0249496ad6dc, type: 3}
+  keyMaterial: {fileID: 2100000, guid: c141e7981cf315745b0a4e1aa854b206, type: 2}
+  caseMaterial: {fileID: 2100000, guid: d4558616fe18d504ba913e919e5f3409, type: 2}
+  feltMaterial: {fileID: 2100000, guid: a02bb8a1cba8f0c419684b7812af31a4, type: 2}
+  bedMaterial: {fileID: 2100000, guid: dbfc4b61356b9554a9eb94e804faf622, type: 2}
+  backdropMaterial: {fileID: 2100000, guid: 49ed01ee8c99f0f4abe1d45a8699d5de, type: 2}
+  logoMaterial: {fileID: 0}

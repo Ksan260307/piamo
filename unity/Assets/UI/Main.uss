@@ -1,0 +1,1393 @@
+/* Piamo — やわらかいパステルの いろと、まるくて大きいボタン（小さな子の指でも おしやすく） */
+
+.root {
+    flex-grow: 1;
+    color: rgb(90, 59, 46);
+    font-size: 40px;
+}
+
+.hidden {
+    display: none;
+}
+
+.screen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.icon {
+    -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* ボタン（あめ玉のような、下にかげのあるボタン） */
+
+.candy {
+    border-radius: 44px;
+    border-width: 0;
+    border-bottom-width: 10px;
+    padding: 14px 36px 10px 36px;
+    margin: 0;
+    background-color: rgb(255, 255, 255);
+    border-bottom-color: rgb(222, 205, 190);
+    color: rgb(90, 59, 46);
+    font-size: 40px;
+    -unity-font-style: normal;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    transition-property: scale, translate, border-bottom-width;
+    transition-duration: 0.08s;
+}
+
+.candy:hover {
+    background-color: rgb(255, 252, 246);
+}
+
+.candy:active {
+    scale: 0.95 0.95;
+    translate: 0px 6px;
+    border-bottom-width: 4px;
+}
+
+.candy--pink { background-color: rgb(255, 160, 190); border-bottom-color: rgb(226, 108, 146); color: rgb(255, 255, 255); }
+.candy--blue { background-color: rgb(126, 200, 245); border-bottom-color: rgb(78, 160, 214); color: rgb(255, 255, 255); }
+.candy--yellow { background-color: rgb(255, 212, 94); border-bottom-color: rgb(226, 170, 52); color: rgb(110, 70, 20); }
+.candy--green { background-color: rgb(128, 214, 160); border-bottom-color: rgb(76, 176, 118); color: rgb(255, 255, 255); }
+.candy--purple { background-color: rgb(186, 164, 240); border-bottom-color: rgb(140, 116, 214); color: rgb(255, 255, 255); }
+.candy--orange { background-color: rgb(255, 176, 110); border-bottom-color: rgb(226, 132, 68); color: rgb(255, 255, 255); }
+.candy--white { background-color: rgb(255, 255, 255); border-bottom-color: rgb(222, 205, 190); color: rgb(90, 59, 46); }
+
+.candy--pink:hover { background-color: rgb(255, 172, 200); }
+.candy--blue:hover { background-color: rgb(140, 208, 248); }
+.candy--yellow:hover { background-color: rgb(255, 220, 116); }
+.candy--green:hover { background-color: rgb(144, 222, 174); }
+.candy--purple:hover { background-color: rgb(196, 176, 244); }
+.candy--orange:hover { background-color: rgb(255, 186, 128); }
+
+.candy__icon {
+    width: 64px;
+    height: 64px;
+    margin-right: 14px;
+    -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
+}
+
+.candy__label {
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
+/* 画面の左上の「もどる」 */
+.back-button {
+    padding: 10px 30px 6px 18px;
+}
+
+.back-button .candy__icon {
+    width: 52px;
+    height: 52px;
+    margin-right: 6px;
+}
+
+/* まるいアイコンだけのボタン */
+.round-button {
+    width: 110px;
+    height: 110px;
+    border-radius: 55px;
+    padding: 0;
+}
+
+.round-button .candy__icon {
+    width: 64px;
+    height: 64px;
+    margin: 0;
+}
+
+.topbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 26px 10px 26px;
+    flex-shrink: 0;
+}
+
+.topbar__title {
+    font-size: 54px;
+    color: rgb(90, 59, 46);
+    -unity-text-align: middle-center;
+    flex-grow: 1;
+    margin: 0 20px;
+}
+
+.badge {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    min-width: 58px;
+    height: 58px;
+    border-radius: 29px;
+    background-color: rgb(255, 92, 110);
+    color: rgb(255, 255, 255);
+    font-size: 36px;
+    -unity-text-align: middle-center;
+    border-width: 5px;
+    border-color: rgb(255, 255, 255);
+    padding: 0 8px;
+}
+
+.bubble {
+    background-color: rgb(255, 255, 255);
+    border-radius: 36px;
+    padding: 18px 30px;
+    color: rgb(90, 59, 46);
+    font-size: 40px;
+    border-width: 5px;
+    border-color: rgb(255, 225, 200);
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+/* ------------------------------------------------------------------ */
+/* メニュー */
+
+.menu-body {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+}
+
+.screen-bg {
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.menu-logo {
+    width: 900px;
+    max-width: 92%;
+    height: 330px;
+    -unity-background-scale-mode: scale-to-fit;
+    margin-bottom: 6px;
+    flex-shrink: 1;
+}
+
+.menu-today {
+    max-width: 92%;
+    white-space: normal;
+    font-size: 36px;
+    color: rgb(110, 80, 64);
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 30px;
+    padding: 10px 30px;
+    margin-bottom: 24px;
+    -unity-text-align: middle-center;
+}
+
+.menu-buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.menu-button {
+    width: 470px;
+    height: 230px;
+    margin: 18px;
+    flex-direction: column;
+    border-radius: 60px;
+    border-bottom-width: 14px;
+}
+
+.menu-button .candy__icon {
+    width: 120px;
+    height: 120px;
+    margin: 0 0 8px 0;
+}
+
+.menu-button .candy__label {
+    font-size: 48px;
+}
+
+.menu-friend {
+    position: absolute;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.portrait .menu-buttons {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.portrait .menu-button {
+    width: 640px;
+    max-width: 88%;
+    height: 190px;
+    flex-direction: row;
+    margin: 14px;
+}
+
+.portrait .menu-button .candy__icon {
+    margin: 0 24px 0 0;
+}
+
+.portrait .menu-logo {
+    width: 860px;
+    height: 330px;
+}
+
+.short .menu-logo {
+    height: 240px;
+    width: 660px;
+}
+
+.short .menu-button {
+    height: 190px;
+    width: 420px;
+    margin: 10px;
+}
+
+.short .menu-button .candy__icon {
+    width: 90px;
+    height: 90px;
+}
+
+.short .menu-today {
+    margin-bottom: 8px;
+}
+
+/* ------------------------------------------------------------------ */
+/* ピアノで あそぶ */
+
+.play {
+    flex-direction: column;
+}
+
+.mode-tabs {
+    flex-direction: row;
+    background-color: rgba(255, 255, 255, 0.75);
+    border-radius: 44px;
+    padding: 6px;
+}
+
+.tab {
+    border-radius: 38px;
+    border-width: 0;
+    padding: 10px 34px;
+    margin: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: rgb(150, 120, 104);
+    font-size: 38px;
+}
+
+.tab:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.tab--on {
+    background-color: rgb(255, 160, 190);
+    color: rgb(255, 255, 255);
+}
+
+.tab--on:hover {
+    background-color: rgb(255, 172, 200);
+}
+
+.stage {
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding: 0 26px;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.free-panel {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.mascot {
+    width: 200px;
+    height: 200px;
+    -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
+}
+
+.free-panel {
+    flex-wrap: wrap;
+}
+
+/* ふきだしの ことばが かわっても、となりの ボタンが うごかないように はばを きめる */
+.free-panel .bubble {
+    margin-left: 10px;
+    width: 520px;
+    flex-shrink: 1;
+}
+
+.short .free-panel .bubble {
+    width: 460px;
+    font-size: 34px;
+}
+
+.chip {
+    border-radius: 40px;
+    padding: 10px 26px 8px 14px;
+    margin-left: 20px;
+}
+
+.chip .candy__icon {
+    width: 70px;
+    height: 70px;
+}
+
+.stamp-meter {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 20px;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 34px;
+    padding: 10px 22px;
+}
+
+.stamp-meter__icon {
+    width: 56px;
+    height: 56px;
+    margin-right: 10px;
+}
+
+.stamp-meter__text {
+    font-size: 32px;
+    color: rgb(110, 80, 64);
+}
+
+.meter-dots {
+    flex-direction: row;
+    margin-left: 12px;
+}
+
+.meter-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    margin: 0 3px;
+    background-color: rgb(236, 222, 210);
+}
+
+.meter-dot--on {
+    background-color: rgb(255, 150, 180);
+}
+
+.portrait .free-panel {
+    flex-direction: column;
+}
+
+.portrait .free-panel .bubble {
+    margin: 10px 0 0 0;
+    width: 640px;
+    max-width: 92%;
+}
+
+.portrait .chip,
+.portrait .stamp-meter {
+    margin: 14px 0 0 0;
+}
+
+.free-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.portrait .free-row {
+    flex-direction: column;
+}
+
+/* まねっこ */
+.mimic-panel {
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.picker-title {
+    font-size: 42px;
+    -unity-text-align: middle-center;
+    margin-bottom: 10px;
+    color: rgb(90, 59, 46);
+}
+
+.song-list {
+    flex-grow: 0;
+    flex-shrink: 1;
+}
+
+.song-list .unity-scroll-view__content-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.song-card {
+    width: 250px;
+    height: 250px;
+    margin: 10px;
+    padding: 10px 6px 6px 6px;
+    border-radius: 40px;
+    flex-direction: column;
+}
+
+.song-card .candy__icon {
+    width: 130px;
+    height: 130px;
+    margin: 0;
+}
+
+.song-card .candy__label {
+    font-size: 30px;
+    white-space: normal;
+    margin-top: 4px;
+}
+
+.song-card__star {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    width: 52px;
+    height: 52px;
+}
+
+.landscape .song-card {
+    width: 190px;
+    height: 196px;
+    margin: 8px;
+}
+
+.landscape .song-card .candy__icon {
+    width: 100px;
+    height: 100px;
+}
+
+.landscape .song-card .candy__label {
+    font-size: 26px;
+}
+
+.short .song-card {
+    width: 156px;
+    height: 160px;
+    margin: 5px;
+    padding: 6px 4px 4px 4px;
+    border-bottom-width: 8px;
+}
+
+.short .song-card .candy__icon {
+    width: 78px;
+    height: 78px;
+}
+
+.short .song-card .candy__label {
+    font-size: 22px;
+}
+
+.short .picker-title {
+    font-size: 34px;
+    margin-bottom: 4px;
+}
+
+.mimic-game {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.teacher {
+    width: 200px;
+    height: 200px;
+    -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
+}
+
+.mimic-center {
+    flex-grow: 1;
+    flex-shrink: 1;
+    align-items: center;
+    max-width: 900px;
+}
+
+.mimic-center .bubble {
+    min-width: 420px;
+}
+
+.mimic-title {
+    font-size: 30px;
+    color: rgb(130, 100, 86);
+    margin-bottom: 6px;
+}
+
+.dots {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.dot {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    margin: 4px 6px;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-width: 5px;
+    border-color: rgb(236, 210, 196);
+}
+
+.dot--on {
+    background-color: rgb(255, 205, 70);
+    border-color: rgb(236, 160, 40);
+}
+
+.mimic-buttons {
+    flex-direction: column;
+    margin-left: 16px;
+}
+
+.mimic-buttons .candy {
+    margin: 8px 0;
+    font-size: 34px;
+    padding: 10px 26px 6px 18px;
+}
+
+.mimic-buttons .candy__icon {
+    width: 54px;
+    height: 54px;
+}
+
+.portrait .mimic-game {
+    flex-direction: column;
+}
+
+.portrait .mimic-buttons {
+    flex-direction: row;
+    margin: 12px 0 0 0;
+}
+
+.portrait .mimic-buttons .candy {
+    margin: 0 10px;
+}
+
+.portrait .teacher {
+    width: 170px;
+    height: 170px;
+}
+
+.short .teacher {
+    width: 150px;
+    height: 150px;
+}
+
+.short .mimic-center .bubble {
+    font-size: 34px;
+    padding: 10px 20px;
+}
+
+.short .dot {
+    width: 34px;
+    height: 34px;
+}
+
+/* 鍵盤のスクロール */
+.nav {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 26px;
+    flex-shrink: 0;
+}
+
+.nav-track {
+    flex-grow: 1;
+    height: 76px;
+    margin: 0 18px;
+    border-radius: 18px;
+    background-color: rgba(255, 255, 255, 0.85);
+    flex-direction: row;
+    overflow: hidden;
+    padding: 6px;
+}
+
+.nav-key {
+    flex-grow: 1;
+    margin: 0 1px;
+    background-color: rgb(250, 246, 240);
+    border-radius: 4px;
+}
+
+.nav-key--c {
+    background-color: rgb(255, 214, 222);
+}
+
+.nav-window {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-width: 7px;
+    border-radius: 18px;
+    border-color: rgb(255, 120, 160);
+    background-color: rgba(255, 140, 175, 0.18);
+}
+
+.nav .round-button {
+    width: 96px;
+    height: 96px;
+}
+
+.keyboard-area {
+    flex-shrink: 0;
+    height: 560px;
+}
+
+.key-label {
+    position: absolute;
+    border-radius: 100px;
+    color: rgb(255, 255, 255);
+    -unity-text-align: middle-center;
+    border-width: 4px;
+    border-color: rgba(255, 255, 255, 0.9);
+    padding: 0;
+    -unity-text-outline-width: 0.4px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.25);
+}
+
+.hint-arrow {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.fx {
+    position: absolute;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.banner {
+    position: absolute;
+    top: 150px;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+.banner__card {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgb(255, 255, 255);
+    border-radius: 44px;
+    border-width: 6px;
+    border-color: rgb(255, 205, 70);
+    padding: 14px 20px 14px 24px;
+}
+
+.banner__icon {
+    width: 110px;
+    height: 110px;
+    margin-right: 14px;
+}
+
+.banner__text {
+    font-size: 38px;
+    margin-right: 18px;
+    white-space: normal;
+    max-width: 600px;
+}
+
+.banner__card .candy {
+    margin-left: 10px;
+    font-size: 34px;
+    padding: 10px 24px 6px 24px;
+}
+
+/* ------------------------------------------------------------------ */
+/* スタンプちょう */
+
+.stamps {
+    flex-direction: column;
+}
+
+.stamp-count {
+    font-size: 34px;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 30px;
+    padding: 8px 26px;
+    color: rgb(110, 80, 64);
+}
+
+.book {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+}
+
+.book .round-button {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+}
+
+.pages {
+    flex-grow: 1;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.page {
+    background-color: rgb(255, 251, 242);
+    border-radius: 40px;
+    border-width: 6px;
+    border-color: rgb(240, 222, 200);
+    margin: 8px 10px;
+    padding: 12px;
+    justify-content: center;
+}
+
+.page-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.cell {
+    align-items: center;
+    justify-content: center;
+}
+
+.slot {
+    border-radius: 1000px;
+    background-color: rgb(246, 236, 222);
+    border-width: 4px;
+    border-color: rgb(236, 220, 200);
+    align-items: center;
+    justify-content: center;
+}
+
+.slot--big {
+    background-color: rgb(255, 238, 196);
+    border-color: rgb(250, 206, 110);
+}
+
+.slot--filled {
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
+}
+
+.slot--next {
+    border-color: rgb(255, 120, 160);
+    background-color: rgb(255, 225, 234);
+}
+
+.slot__number {
+    color: rgb(214, 196, 178);
+    -unity-text-align: middle-center;
+}
+
+.slot--big .slot__number {
+    color: rgb(230, 170, 70);
+}
+
+.slot__image {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.slot__date {
+    color: rgb(170, 140, 120);
+    -unity-text-align: middle-center;
+}
+
+.slot__tap {
+    position: absolute;
+    color: rgb(255, 90, 140);
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
+.page-label {
+    font-size: 32px;
+    color: rgb(130, 100, 86);
+    -unity-text-align: middle-center;
+    margin-bottom: 6px;
+}
+
+.stamp-message {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px 14px 20px;
+    flex-shrink: 0;
+}
+
+.stamp-message .bubble {
+    font-size: 36px;
+    padding: 12px 30px;
+}
+
+.overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(70, 40, 30, 0.45);
+    align-items: center;
+    justify-content: center;
+}
+
+.detail-card {
+    background-color: rgb(255, 251, 242);
+    border-radius: 60px;
+    border-width: 8px;
+    border-color: rgb(255, 214, 120);
+    padding: 30px 50px;
+    align-items: center;
+    max-width: 92%;
+    max-height: 94%;
+}
+
+.detail-image {
+    width: 520px;
+    height: 520px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.detail-name {
+    font-size: 52px;
+    margin-top: 10px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    max-width: 900px;
+}
+
+.portrait .detail-name {
+    font-size: 40px;
+}
+
+.portrait .detail-card {
+    padding: 24px 24px;
+}
+
+.portrait .detail-image {
+    width: 440px;
+    height: 440px;
+}
+
+.detail-info {
+    font-size: 32px;
+    color: rgb(140, 110, 96);
+    margin: 6px 0 18px 0;
+    -unity-text-align: middle-center;
+}
+
+.short .detail-image {
+    width: 380px;
+    height: 380px;
+}
+
+.celebrate {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 26%;
+    align-items: center;
+}
+
+.celebrate__text {
+    font-size: 84px;
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 4px;
+    -unity-text-outline-color: rgb(236, 110, 150);
+    -unity-text-align: middle-center;
+}
+
+.confetti {
+    position: absolute;
+    width: 26px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* せってい */
+
+.sheet {
+    background-color: rgb(255, 251, 242);
+    border-radius: 50px;
+    width: 92%;
+    max-width: 1500px;
+    height: 94%;
+    padding: 0;
+    overflow: hidden;
+}
+
+.portrait .sheet,
+.short .sheet {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    max-width: 100%;
+}
+
+.sheet .topbar {
+    border-bottom-width: 4px;
+    border-bottom-color: rgb(240, 226, 210);
+    background-color: rgb(255, 244, 228);
+}
+
+.settings-scroll {
+    flex-grow: 1;
+}
+
+.settings-scroll .unity-scroll-view__content-container {
+    padding: 10px 40px 60px 40px;
+}
+
+.section-title {
+    font-size: 44px;
+    color: rgb(236, 110, 150);
+    margin: 30px 0 8px 0;
+    flex-direction: row;
+    align-items: center;
+}
+
+.section-title .icon {
+    width: 64px;
+    height: 64px;
+    margin-right: 12px;
+}
+
+.row {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    background-color: rgb(255, 255, 255);
+    border-radius: 34px;
+    padding: 16px 24px;
+    margin: 8px 0;
+}
+
+.row__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 300px;
+    margin-right: 16px;
+}
+
+.row__label {
+    font-size: 38px;
+    white-space: normal;
+}
+
+.row__sub {
+    font-size: 26px;
+    color: rgb(160, 132, 118);
+    white-space: normal;
+}
+
+.row__control {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    flex-shrink: 1;
+    max-width: 100%;
+}
+
+.row__control .grid {
+    flex-shrink: 1;
+    max-width: 100%;
+}
+
+.portrait .settings-scroll .unity-scroll-view__content-container {
+    padding: 6px 16px 60px 16px;
+}
+
+.portrait .inst-card {
+    width: 168px;
+    height: 186px;
+    margin: 6px;
+}
+
+.portrait .slider {
+    width: 440px;
+}
+
+.portrait .seg__item {
+    padding: 8px 16px;
+    font-size: 30px;
+}
+
+.portrait .row {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.portrait .row__text {
+    margin: 0 0 10px 0;
+    min-width: 0;
+}
+
+.portrait .row__control {
+    justify-content: center;
+}
+
+.seg {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    background-color: rgb(246, 236, 222);
+    border-radius: 36px;
+    padding: 6px;
+}
+
+.seg__item {
+    border-radius: 30px;
+    border-width: 0;
+    margin: 2px;
+    padding: 8px 22px;
+    font-size: 32px;
+    background-color: rgba(0, 0, 0, 0);
+    color: rgb(140, 110, 96);
+    min-width: 80px;
+    -unity-text-align: middle-center;
+}
+
+.seg__item:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.seg__item--on {
+    background-color: rgb(255, 160, 190);
+    color: rgb(255, 255, 255);
+}
+
+.seg__item--on:hover {
+    background-color: rgb(255, 172, 200);
+}
+
+.switch {
+    width: 150px;
+    height: 80px;
+    border-radius: 40px;
+    background-color: rgb(226, 214, 204);
+    padding: 8px;
+    border-width: 0;
+    margin: 0;
+    flex-direction: row;
+    transition-property: background-color;
+    transition-duration: 0.15s;
+}
+
+.switch__knob {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+    background-color: rgb(255, 255, 255);
+    transition-property: translate;
+    transition-duration: 0.15s;
+}
+
+.switch--on {
+    background-color: rgb(128, 214, 160);
+}
+
+.switch--on .switch__knob {
+    translate: 70px 0px;
+}
+
+.switch__text {
+    font-size: 30px;
+    margin-left: 14px;
+    color: rgb(140, 110, 96);
+    min-width: 70px;
+}
+
+.slider {
+    width: 520px;
+    height: 80px;
+    justify-content: center;
+}
+
+.slider__track {
+    height: 26px;
+    border-radius: 13px;
+    background-color: rgb(236, 224, 212);
+    overflow: hidden;
+}
+
+.slider__fill {
+    height: 100%;
+    background-color: rgb(255, 160, 190);
+}
+
+.slider__knob {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    border-radius: 35px;
+    top: 5px;
+    background-color: rgb(255, 255, 255);
+    border-width: 6px;
+    border-color: rgb(255, 160, 190);
+}
+
+.stepper {
+    flex-direction: row;
+    align-items: center;
+}
+
+.stepper .round-button {
+    width: 90px;
+    height: 90px;
+}
+
+.stepper__value {
+    min-width: 200px;
+    font-size: 38px;
+    -unity-text-align: middle-center;
+}
+
+.grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.inst-card {
+    width: 190px;
+    height: 200px;
+    margin: 8px;
+    padding: 8px 4px 4px 4px;
+    border-radius: 36px;
+    flex-direction: column;
+    border-width: 0;
+    border-bottom-width: 10px;
+}
+
+.inst-card .candy__icon {
+    width: 110px;
+    height: 110px;
+    margin: 0;
+}
+
+.inst-card .candy__label {
+    font-size: 28px;
+    white-space: normal;
+}
+
+.inst-card--on {
+    background-color: rgb(255, 225, 234);
+    border-color: rgb(255, 130, 168);
+    border-width: 6px;
+    border-bottom-width: 12px;
+}
+
+.swatch {
+    width: 96px;
+    height: 96px;
+    border-radius: 48px;
+    margin: 8px;
+    border-width: 6px;
+    border-color: rgb(255, 255, 255);
+    padding: 0;
+}
+
+.swatch--on {
+    border-color: rgb(90, 59, 46);
+    scale: 1.1 1.1;
+}
+
+.theme-swatch {
+    width: 170px;
+    height: 110px;
+    border-radius: 30px;
+    margin: 8px;
+    border-width: 6px;
+    border-color: rgb(255, 255, 255);
+    padding: 0;
+    -unity-text-align: lower-center;
+    font-size: 28px;
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.4);
+}
+
+.theme-swatch--on {
+    border-color: rgb(90, 59, 46);
+}
+
+.parents-text {
+    font-size: 28px;
+    color: rgb(130, 104, 90);
+    white-space: normal;
+    margin: 6px 4px 10px 4px;
+}
+
+.hold-button {
+    overflow: hidden;
+}
+
+.hold-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background-color: rgba(255, 255, 255, 0.45);
+}
+
+.credits {
+    font-size: 24px;
+    color: rgb(160, 132, 118);
+    white-space: normal;
+    margin-top: 24px;
+}
+
+/* ------------------------------------------------------------------ */
+/* ダイアログ・おしらせ */
+
+.dialog-card {
+    background-color: rgb(255, 251, 242);
+    border-radius: 50px;
+    padding: 40px 50px 34px 50px;
+    align-items: center;
+    max-width: 1100px;
+    border-width: 8px;
+    border-color: rgb(255, 214, 120);
+}
+
+.dialog-text {
+    font-size: 40px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+    margin-bottom: 30px;
+}
+
+.dialog-buttons {
+    flex-direction: row;
+}
+
+.dialog-buttons .candy {
+    margin: 0 16px;
+    min-width: 240px;
+}
+
+.popup-card {
+    background-color: rgb(255, 251, 242);
+    border-radius: 50px;
+    padding: 24px 30px;
+    align-items: center;
+    max-width: 94%;
+    max-height: 94%;
+    border-width: 8px;
+    border-color: rgb(186, 164, 240);
+}
+
+.popup-title {
+    font-size: 44px;
+    margin-bottom: 12px;
+}
+
+.toast {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+.toast__text {
+    background-color: rgba(90, 59, 46, 0.88);
+    color: rgb(255, 255, 255);
+    border-radius: 36px;
+    padding: 14px 36px;
+    font-size: 36px;
+}
+
+/* ------------------------------------------------------------------ */
+/* たて長のスマホ：上のバーを小さく */
+
+.portrait .topbar {
+    padding: 14px 16px 8px 16px;
+}
+
+.portrait .tab {
+    font-size: 30px;
+    padding: 8px 18px;
+}
+
+.portrait .back-button {
+    padding: 8px 20px 4px 10px;
+}
+
+.portrait .back-button .candy__label {
+    font-size: 34px;
+}
+
+.portrait .back-button .candy__icon {
+    width: 44px;
+    height: 44px;
+}
+
+.portrait .topbar .round-button {
+    width: 96px;
+    height: 96px;
+}
+
+.portrait .topbar__title {
+    font-size: 44px;
+    margin: 0 8px;
+}
+
+.portrait .stamp-count {
+    font-size: 26px;
+    padding: 6px 14px;
+}
+
+/* たて長では、ページの やじるしを 下に出して、ページを はばいっぱいに */
+.portrait .book {
+    padding: 0 4px 96px 4px;
+}
+
+.portrait .book .round-button {
+    width: 84px;
+    height: 84px;
+    position: absolute;
+    bottom: 4px;
+}
+
+.portrait #page-prev {
+    left: 60px;
+}
+
+.portrait #page-next {
+    right: 60px;
+}
+
+.portrait .stamp-message .bubble {
+    font-size: 30px;
+}

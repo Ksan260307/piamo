@@ -1,0 +1,5 @@
+PiamoRounded-ExtraBold.ttf / PiamoRounded-Black.ttf are subsets of M PLUS Rounded 1c.
+Copyright 2016 The Rounded M+ Project Authors.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+https://openfontlicense.org
