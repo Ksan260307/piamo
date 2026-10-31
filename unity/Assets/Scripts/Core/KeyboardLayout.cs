@@ -31,9 +31,12 @@ namespace Piamo
     {
         public const int MinOctaves = 1;
         public const int MaxOctaves = 5;
-        /// <summary>鳴らせる音のはんい（C1〜C8。音のサンプルがあるはんい）。</summary>
-        public const int LowestNote = 24;
-        public const int HighestNote = 108;
+        /// <summary>
+        /// 鳴らせる音のはんい（C2〜C7）。楽器の音は、このはんいの すべての半音を ファイルで持つ
+        /// （音の高さを変えて鳴らさないので、どの音も ぴったりの高さ）。
+        /// </summary>
+        public const int LowestNote = 36;
+        public const int HighestNote = 96;
 
         public int Low { get; private set; }
         public int High { get; private set; }

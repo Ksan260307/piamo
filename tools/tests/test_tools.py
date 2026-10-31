@@ -49,11 +49,10 @@ class AudioTests(unittest.TestCase):
         self.assertAlmostEqual(audio.midi(69), 440.0)
         self.assertAlmostEqual(audio.midi(60), 261.6256, places=3)
 
-    def test_root_notes_cover_keyboard_range(self):
-        # C1〜C8 のどの音も、近い音から ±2 半音以内で鳴らせる
-        roots = audio.ROOT_NOTES
-        for n in range(24, 109):
-            self.assertLessEqual(min(abs(r - n) for r in roots), audio.MAX_SHIFT, n)
+    def test_every_semitone_has_its_own_sample(self):
+        # C2〜C7 の すべての半音に、その高さの音がある（アプリは 音の高さを変えて鳴らさない）
+        self.assertEqual(audio.ROOT_NOTES, list(range(36, 97)))
+        self.assertEqual(audio.MAX_SHIFT, 0)
 
     def test_piano_pitch_is_right(self):
         for note in (48, 60, 72):
@@ -62,22 +61,24 @@ class AudioTests(unittest.TestCase):
             f = peak_freq(seg, 32000)
             self.assertAlmostEqual(f / audio.midi(note), 1.0, delta=0.02, msg=f"note {note}: {f}Hz")
 
-    def test_all_instruments_in_tune(self):
-        # 生成した音のファイルの、基音のあたりで いちばん強い周波数（どうぶつの声も、のばしている ところの高さ）
-        folder = os.path.join(ROOT, "unity", "Assets", "Audio", "Instruments")
-        for name, fn, sr, loop in audio.INSTRUMENTS:
-            for note in (48, 60, 72):
-                with wave.open(os.path.join(folder, name, f"{name}_{note:03d}.wav")) as w:
-                    rate = w.getframerate()
-                    x = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float64)
-                seg = x[int(0.03 * rate): int(0.53 * rate)]
-                n = len(seg)
-                spec = np.abs(np.fft.rfft(seg * np.hanning(n), n * 8))
-                fr = np.fft.rfftfreq(n * 8, 1 / rate)
-                expect = audio.midi(note)
-                band = (fr > expect * 0.8) & (fr < expect * 1.25)
-                cents = 1200 * np.log2(fr[band][np.argmax(spec[band])] / expect)
-                self.assertLess(abs(cents), 10, f"{name} {note}: {cents:+.1f} セント")
+    def test_all_610_notes_in_tune(self):
+        # 10 の楽器 × 61 の音 ぜんぶの 音の高さを はかる（tools/check_pitch.py と同じ しらべかた）
+        pitch = load("check_pitch")
+        with redirect_stdout(io.StringIO()):
+            rows = pitch.check(verbose=False)
+        self.assertEqual(len(rows), 610)
+        bad = [f"{name} {note}: {cents:+.2f}" for name, note, cents, dominant in rows
+               if abs(cents) > pitch.TOLERANCE_CENTS or not dominant]
+        self.assertEqual(bad, [], "音の高さが ずれている")
+
+    def test_pitch_probe_catches_a_wrong_note(self):
+        # しらべかたが ほんとうに ずれを見つけられるか（半音 ずれた ファイルを わざと はかる）
+        pitch = load("check_pitch")
+        folder = os.path.join(ROOT, "unity", "Assets", "Audio", "Instruments", "piano")
+        f, cents, _ = pitch.measure(os.path.join(folder, "piano_061.wav"), 60)
+        self.assertGreater(cents, 90)
+        f, cents, _ = pitch.measure(os.path.join(folder, "piano_060.wav"), 60)
+        self.assertLess(abs(cents), 3)
 
     def test_percussive_instruments_decay(self):
         for name, fn, sr, loop in audio.INSTRUMENTS:
@@ -216,7 +217,7 @@ class CheckBuildTests(unittest.TestCase):
             f.write(gzip.compress(b"function PiamoLocalDate(){}" if jslib else b"nothing"))
         with open(os.path.join(d, "index.html"), "w", encoding="utf-8") as f:
             f.write('<script>const loaderUrl = buildUrl + "/WebGL.loader.js";</script>')
-        for n in ("manifest.webmanifest", "icon.png", "favicon.png", "logo.png"):
+        for n in ("manifest.webmanifest", "icon.png", "favicon.png", "logo.png", "pitchcheck.js"):
             open(os.path.join(d, n), "wb").write(b"x")
         for i in range(1, stamps_count + 1):
             open(os.path.join(d, "StreamingAssets", "Stamps", f"stamp_{i:03d}.png"), "wb").write(b"x")

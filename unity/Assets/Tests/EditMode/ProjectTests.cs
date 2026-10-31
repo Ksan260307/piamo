@@ -67,20 +67,23 @@ namespace Piamo.Tests
         }
 
         [Test]
-        public void EveryInstrumentHasAllNotes()
+        public void EveryInstrumentHasItsOwnSampleForEveryNote()
         {
+            // 音の高さを変えて鳴らさない（WebGL の pitch は ずれる）ので、鳴らせる すべての半音に その音のファイルがある
             var bank = Bank;
             Assert.IsNotNull(bank);
+            int count = KeyboardLayout.HighestNote - KeyboardLayout.LowestNote + 1;
             foreach (var info in InstrumentCatalog.All)
             {
                 var inst = bank.Find(info.id);
                 Assert.AreEqual(info.id, inst.id);
-                Assert.AreEqual(22, inst.clips.Length, info.id);
-                Assert.IsTrue(inst.clips.All(c => c != null), info.id);
+                Assert.AreEqual(count, inst.clips.Length, info.id);
                 for (int n = KeyboardLayout.LowestNote; n <= KeyboardLayout.HighestNote; n++)
                 {
-                    int i = InstrumentBank.Nearest(inst.roots, n);
-                    Assert.LessOrEqual(Mathf.Abs(inst.roots[i] - n), 2, $"{info.id} {n}");
+                    int i = InstrumentBank.IndexOf(inst.roots, n);
+                    Assert.GreaterOrEqual(i, 0, $"{info.id} に {n} の音がない");
+                    Assert.IsTrue(inst.clips[i] != null, $"{info.id} {n}");
+                    Assert.AreEqual($"{info.id}_{n:000}", inst.clips[i].name, "番号と ファイルが ずれていない");
                 }
                 var imp = (AudioImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(inst.clips[0]));
                 Assert.AreEqual(info.id == "piano", imp.defaultSampleSettings.preloadAudioData, "ピアノだけ はじめから読む");
@@ -88,12 +91,23 @@ namespace Piamo.Tests
         }
 
         [Test]
-        public void PitchMath()
+        public void ImportedClipsAreInTune()
         {
-            Assert.AreEqual(1f, InstrumentBank.PitchFor(60, 60), 1e-5f);
-            Assert.AreEqual(2f, InstrumentBank.PitchFor(60, 72), 1e-4f);
-            Assert.AreEqual(Mathf.Pow(2, 2 / 12f), InstrumentBank.PitchFor(60, 62), 1e-4f);
-            Assert.AreEqual(1, InstrumentBank.Nearest(new[] { 56, 60, 64 }, 61));
+            // Unity が取りこんだ（圧縮して ほどいた）音で、音の高さを はかる。楽器ごとに 低い・まんなか・高い 音
+            var bank = Bank;
+            foreach (var info in InstrumentCatalog.All)
+            {
+                var inst = bank.Find(info.id);
+                foreach (int note in new[] { 36, 48, 60, 61, 66, 72, 83, 96 })
+                {
+                    var clip = inst.clips[InstrumentBank.IndexOf(inst.roots, note)];
+                    clip.LoadAudioData();
+                    var data = new float[clip.samples * clip.channels];
+                    Assert.IsTrue(clip.GetData(data, 0), $"{clip.name} を読めない");
+                    float cents = PitchProbe.Cents(data, clip.channels, clip.frequency, note, info.loop, info.id == "cat" || info.id == "dog");
+                    Assert.Less(Mathf.Abs(cents), 6f, $"{clip.name}: {cents:+0.0;-0.0} セント");
+                }
+            }
         }
 
         [Test]

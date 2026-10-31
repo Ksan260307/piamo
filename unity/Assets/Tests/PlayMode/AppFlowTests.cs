@@ -167,6 +167,33 @@ namespace Piamo.Tests
         }
 
         [UnityTest]
+        public IEnumerator EveryNoteUsesItsOwnSampleAtPitchOne()
+        {
+            // 5 オクターブ（C2〜C7）の すべての鍵盤・すべての楽器で、その高さの音のファイルを pitch 1 のまま鳴らす
+            // （WebGL の AudioSource.pitch は 1 でないと ずれるため、音の高さは けっして変えない）
+            SaveSystem.Settings.octaves = 5;
+            SaveSystem.ApplySettings();
+            yield return Frames(2);
+            Assert.AreEqual(KeyboardLayout.LowestNote, Play.Layout.Low);
+            Assert.AreEqual(KeyboardLayout.HighestNote, Play.Layout.High);
+            var sources = Audio.GetComponents<AudioSource>();
+            foreach (var info in InstrumentCatalog.All)
+            {
+                Audio.SetInstrument(info.id);
+                foreach (var k in Play.Layout.Keys)
+                {
+                    Play.KeyDown(k.midi, 77);
+                    Assert.AreEqual(k.midi, Audio.LastNote);
+                    Assert.AreEqual(1f, Audio.LastPitch, $"{info.id} {k.midi}");
+                    Assert.AreEqual($"{info.id}_{k.midi:000}", Audio.LastClip.name, "その高さの音のファイル");
+                    Play.KeyUp(k.midi, 77);
+                }
+                foreach (var s in sources) Assert.AreEqual(1f, s.pitch, "どの AudioSource も pitch は 1");
+                yield return null;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator AVeryQuickTapStillPlays()
         {
             // おして はなすのが 1 フレームのうちに おわっても（重い端末・はやいタップ）、音は なる

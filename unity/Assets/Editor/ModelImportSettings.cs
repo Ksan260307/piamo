@@ -11,7 +11,7 @@ namespace Piamo.EditorTools
         const string ModelFolder = "Assets/Art/Models";
 
         // 取り込み設定を変えたら、数字を上げる（取り込みなおされる）
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 4;
 
         void OnPreprocessModel()
         {
@@ -43,8 +43,9 @@ namespace Piamo.EditorTools
             s.preloadAudioData = true;
             if (assetPath.Contains("/Instruments/"))
             {
-                // 楽器の音は、えらんだ楽器だけを読みこむ（PianoAudio.SetInstrument）
-                s.quality = 0.55f;
+                // 楽器の音は、えらんだ楽器だけを読みこむ（PianoAudio.SetInstrument）。
+                // すべての半音の音（610 こ）があるので、ダウンロードが大きくならないように すこし つよく圧縮する
+                s.quality = 0.3f;
                 s.preloadAudioData = assetPath.Contains("/piano/");
             }
             else s.quality = 0.6f;

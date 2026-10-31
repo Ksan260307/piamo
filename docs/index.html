@@ -149,7 +149,15 @@
         showError("よみこみに しっぱいしました: " + message);
       });
     };
-    document.body.appendChild(script);
+    // 音の高さの けんさ（?pitchtest）では、鳴った音を はかる しかけ（pitchcheck.js）を Unity より先に 読みこむ（TESTING.md）
+    if (/[?&]pitchtest/.test(location.search)) {
+      const check = document.createElement("script");
+      check.src = "pitchcheck.js";
+      check.onload = check.onerror = () => document.body.appendChild(script);
+      document.body.appendChild(check);
+    } else {
+      document.body.appendChild(script);
+    }
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     canvas.addEventListener("pointerdown", () => canvas.focus());
   </script>

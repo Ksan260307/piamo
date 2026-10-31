@@ -8,6 +8,7 @@ WebGL ビルド（公開用フォルダ）の検査。CI のデプロイ前に�
  - 配布してはいけないデバッグ情報（*_DoNotShip）が含まれていない
  - ブラウザとのやりとりの jslib（PiamoPage.jslib）が組みこまれている
  - ホーム画面に追加するための manifest・アイコン・ロゴがある
+ - 音の高さの けんさ（index.html?pitchtest で読みこむ pitchcheck.js）がある
  - スタンプの絵（StreamingAssets/Stamps）が 365 こ そろっている
 """
 import gzip
@@ -50,7 +51,7 @@ def main():
         fail(f"index.html が参照する {m.group(1)} がありません")
     if "{{{" in html:
         fail("index.html に未展開のテンプレート変数が残っています")
-    for asset in ("manifest.webmanifest", "icon.png", "favicon.png", "logo.png"):
+    for asset in ("manifest.webmanifest", "icon.png", "favicon.png", "logo.png", "pitchcheck.js"):
         if not os.path.isfile(os.path.join(site, asset)):
             fail(f"{asset} がありません")
     fw = os.path.join(build, need["framework"][0])

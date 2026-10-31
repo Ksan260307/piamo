@@ -81,7 +81,7 @@ PC・**スマホ／iPad** の ブラウザで あそべます（ホーム画面�
 | | おとの おおきさ | スライダー |
 | | おとを のばす | はなしても おとが のこる（ペダル） |
 | けんばん | けんばんの かず | 8・15・22・29・36 けん（1〜5 オクターブ） |
-| | オクターブ | おとの たかさを 1 オクターブずつ（C1〜C8 の はんいで） |
+| | オクターブ | おとの たかさを 1 オクターブずつ（C2〜C7 の はんいで） |
 | | けんばんの おおきさ | ちいさい・ふつう・おおきい（細くなりすぎると スクロール） |
 | | くろい けんばん | あり・なし（なしは しろい けんばんだけ） |
 | | おんめい | なし・ドレミ・どれみ・CDE・いろ |
@@ -101,7 +101,10 @@ PC・**スマホ／iPad** の ブラウザで あそべます（ホーム画面�
 - **エンジン**: Unity 6 (6000.5.4f1) / URP / UI Toolkit / Input System
 - **けんばん**: Blender 5.2 の Python スクリプトで プロシージャル生成（`blender/scripts/build_piano_kit.py`。白鍵は 黒鍵の切りかきの形 4 しゅ・黒鍵・ケース）
 - **スタンプ・どうぶつ・アイコン**: Python（Pillow）で生成（`tools/make_stamps.py`・`tools/make_icons.py`）
-- **音**: 10 の楽器（C1〜C8 を 4 半音おき）と 効果音を Python (numpy) で合成（`tools/make_audio.py`）
+- **音**: 10 の楽器（C2〜C7 の **すべての半音**、610 こ）と 効果音を Python (numpy) で合成（`tools/make_audio.py`）。
+  どの音も その高さの音を そのまま鳴らします（WebGL の Unity では `AudioSource.pitch` を 1 以外にすると 約 1.5 半音ずれるため、音の高さは変えない）。
+  音の高さは `python tools/check_pitch.py` で ぜんぶ はかれます（610 こ すべて ±3 セント以内）。
+  ブラウザで ほんとうに鳴る音は、URL に `?pitchtest` を つけて ひらくと はかって 画面に出します（スマホ・iPad でも。[TESTING.md](TESTING.md)）
 - **公開**: GitHub Actions → GitHub Pages（WebGL）
 
 ### フォルダ構成
@@ -153,9 +156,9 @@ powershell -ExecutionPolicy Bypass -File tools/run_tests.ps1 -Only PlayMode
 | 種類 | 件数 | 場所 |
 | --- | ---: | --- |
 | Unity EditMode（単体） | 67 | `unity/Assets/Tests/EditMode` |
-| Unity PlayMode（総合） | 22（画面の絵を描き出す 1 件は、指定したときだけ） | `unity/Assets/Tests/PlayMode` |
+| Unity PlayMode（総合） | 23（画面の絵を描き出す 1 件は、指定したときだけ） | `unity/Assets/Tests/PlayMode` |
 | Blender（単体） | 8 | `blender/tests` |
-| Python（単体） | 22 | `tools/tests` |
+| Python（単体） | 23 | `tools/tests` |
 
 テストの中身は [TESTING.md](TESTING.md) へ。
 

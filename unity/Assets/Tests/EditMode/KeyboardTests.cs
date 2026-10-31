@@ -98,7 +98,8 @@ namespace Piamo.Tests
                     Assert.LessOrEqual(k.High, KeyboardLayout.HighestNote, $"{o} {s}");
                 }
             }
-            Assert.AreEqual(new Vector2Int(-3, 3), KeyboardLayout.ShiftLimits(1));
+            Assert.AreEqual(new Vector2Int(-2, 2), KeyboardLayout.ShiftLimits(1));
+            Assert.AreEqual(new Vector2Int(0, 0), KeyboardLayout.ShiftLimits(5), "5 オクターブ（C2〜C7）は ずらせない");
         }
 
         [Test]

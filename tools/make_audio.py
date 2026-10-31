@@ -6,7 +6,8 @@ Piamo の音をすべてプログラムで合成する（numpy のみ）。
 
 出力:
  - unity/Assets/Audio/Instruments/<楽器>/<楽器>_<MIDI 番号>.wav
-     楽器ごとに、C1 (24) から C8 (108) まで 4 半音おきの音（22 本）。あいだの音は、アプリが近い音の高さを変えて鳴らす（±2 半音まで）
+     楽器ごとに、C2 (36) から C7 (96) までの すべての半音（61 本）。アプリは どの音も その高さの音を そのまま鳴らす
+     （音の高さを変えて鳴らすと、WebGL では Unity が 48000/44100 倍ずらしてしまうため。ずらさなければ ぴったり）
      ピアノ・トイピアノ・オルゴール・てっきん・もっきん・ハープ・ねこ・いぬ は、たたいて減っていく音（1 回鳴らす）
      オルガン・ふえ は、つなぎ目のないループ（おしている間なりつづける）
  - unity/Assets/Audio/Sfx/*.wav : ボタン・もどる・せってい・スタンプ・でっかいスタンプ・まねっこの正解・ヒントなど
@@ -22,8 +23,8 @@ ROOT = os.path.abspath(os.path.join(HERE, ".."))
 OUT = os.path.join(ROOT, "unity", "Assets", "Audio")
 rng = np.random.default_rng(20261031)
 
-ROOT_NOTES = list(range(24, 109, 4))   # C1 … C8（4 半音おき）
-MAX_SHIFT = 2                          # アプリでずらす半音の数（ROOT_NOTES のあいだの音）
+ROOT_NOTES = list(range(36, 97))        # C2 … C7（すべての半音）
+MAX_SHIFT = 0                          # アプリでずらす半音の数（ずらさない）
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +110,7 @@ def lerp_by_note(note, lo, hi):
 # ---------------------------------------------------------------------------
 def piano(note, sr):
     f0 = midi(note)
-    dur = lerp_by_note(note, 4.0, 1.3)
+    dur = lerp_by_note(note, 2.5, 1.1)
     t = t_axis(dur, sr)
     B = 0.00012 * 2 ** ((note - 48) / 18)          # 弦の硬さ（高い音ほど倍音が高めにずれる）
     tau_base = lerp_by_note(note, 2.6, 0.35)       # 基音の減衰の速さ
@@ -138,7 +139,7 @@ def piano(note, sr):
     hn = fft_lowpass(hn, sr, min(6000, f0 * 6))
     out += hn * 0.08
     out = fade(out, sr, 0.0015, 0.08)
-    out = room(out, sr, 0.9, 0.12)
+    out = room(out, sr, 0.5, 0.12)
     return out
 
 
@@ -159,43 +160,43 @@ def tine(note, sr, ratios, amps, taus, dur, click=0.0, click_tau=0.004):
 
 
 def toy_piano(note, sr):
-    dur = lerp_by_note(note, 1.6, 0.8)
+    dur = lerp_by_note(note, 1.3, 0.7)
     s = lerp_by_note(note, 1.0, 0.45)
     out = tine(note, sr, [1.0, 2.01, 3.9, 5.43, 8.7], [1.0, 0.35, 0.28, 0.18, 0.08],
                [0.55 * s, 0.25 * s, 0.12 * s, 0.07 * s, 0.04 * s], dur, click=0.08)
-    return room(fade(out, sr, 0.001, 0.05), sr, 0.6, 0.12)
+    return room(fade(out, sr, 0.001, 0.05), sr, 0.4, 0.12)
 
 
 def music_box(note, sr):
-    dur = lerp_by_note(note, 2.4, 1.3)
+    dur = lerp_by_note(note, 1.7, 1.0)
     s = lerp_by_note(note, 1.1, 0.6)
     a = tine(note, sr, [1.0, 2.0, 4.1, 5.95, 9.2], [1.0, 0.22, 0.32, 0.12, 0.05],
              [1.2 * s, 0.6 * s, 0.25 * s, 0.12 * s, 0.06 * s], dur, click=0.05, click_tau=0.002)
     # くしの歯の、ほんの少しずれたうなり
     b = tine(note + 0.07, sr, [1.0], [0.25], [1.0 * s], dur)
-    return room(fade(a + b, sr, 0.001, 0.05), sr, 1.1, 0.18)
+    return room(fade(a + b, sr, 0.001, 0.05), sr, 0.6, 0.18)
 
 
 def glockenspiel(note, sr):
-    dur = lerp_by_note(note, 2.4, 1.3)
+    dur = lerp_by_note(note, 1.7, 1.0)
     s = lerp_by_note(note, 1.0, 0.6)
     out = tine(note, sr, [1.0, 2.76, 5.40, 8.93], [1.0, 0.42, 0.2, 0.08],
                [1.1 * s, 0.35 * s, 0.14 * s, 0.07 * s], dur, click=0.06, click_tau=0.0015)
-    return room(fade(out, sr, 0.001, 0.05), sr, 1.0, 0.16)
+    return room(fade(out, sr, 0.001, 0.05), sr, 0.6, 0.16)
 
 
 def marimba(note, sr):
-    dur = lerp_by_note(note, 1.5, 0.55)
+    dur = lerp_by_note(note, 1.2, 0.5)
     s = lerp_by_note(note, 1.0, 0.4)
     out = tine(note, sr, [1.0, 3.93, 9.2], [1.0, 0.25, 0.06], [0.42 * s, 0.09 * s, 0.03 * s], dur,
                click=0.1, click_tau=0.003)
     out = fft_lowpass(out, sr, 5000)
-    return room(fade(out, sr, 0.002, 0.04), sr, 0.7, 0.12)
+    return room(fade(out, sr, 0.002, 0.04), sr, 0.5, 0.12)
 
 
 def harp(note, sr):
     f0 = midi(note)
-    dur = lerp_by_note(note, 3.0, 1.2)
+    dur = lerp_by_note(note, 2.1, 1.0)
     t = t_axis(dur, sr)
     tau = lerp_by_note(note, 1.6, 0.45)
     out = np.zeros_like(t)
@@ -208,7 +209,7 @@ def harp(note, sr):
         amp = abs(np.sin(np.pi * k * pos)) / k ** 1.6
         out += amp * np.exp(-t * (1 + 0.45 * (k - 1)) / tau) * np.sin(2 * np.pi * f * t)
     out = fade(out, sr, 0.003, 0.06)
-    return room(out, sr, 1.1, 0.16)
+    return room(out, sr, 0.6, 0.16)
 
 
 def loop_length(f0, sr, seconds):
@@ -234,11 +235,12 @@ def flute(note, sr):
     f0 = midi(note)
     n, f = loop_length(f0, sr, 0.6)
     t = np.arange(n) / sr
-    vib = 1 + 0.004 * np.sin(2 * np.pi * (5.0 * n / sr) / (n / sr) * t)  # 0.6 秒に 3 回のビブラート
-    phase = 2 * np.pi * f * np.cumsum(vib) / sr
-    phase -= phase[0]
-    # ビブラートでずれた位相を、ループの終わりでぴったり合わせる
-    phase *= (2 * np.pi * round(f * n / sr)) / (phase[-1] + 2 * np.pi * f / sr)
+    # ビブラート（±0.25%＝±4 セントほど）は、ループに ちょうど整数回 入る速さにする。
+    # 1 周期の平均は 0 なので、ループの おわりで 基音の位相も ちょうど整数回まわり、つなぎ目が ない
+    length = n / sr
+    vib_hz = max(1, round(5.0 * length)) / length
+    vib = 1 + 0.0025 * np.sin(2 * np.pi * vib_hz * t)
+    phase = 2 * np.pi * f * (np.cumsum(vib) - vib[0]) / sr
     out = np.sin(phase) + 0.12 * np.sin(2 * phase) + 0.05 * np.sin(3 * phase)
     # 息の音（周期的なノイズなのでそのままループする）
     spec = rng.normal(size=n // 2 + 1) + 1j * rng.normal(size=n // 2 + 1)
@@ -320,12 +322,12 @@ def dog(note, sr):
 INSTRUMENTS = [
     ("piano", piano, 32000, False),
     ("toy", toy_piano, 24000, False),
-    ("musicbox", music_box, 32000, False),
-    ("glock", glockenspiel, 32000, False),
-    ("marimba", marimba, 24000, False),
-    ("organ", organ, 24000, True),
-    ("flute", flute, 24000, True),
-    ("harp", harp, 32000, False),
+    ("musicbox", music_box, 24000, False),
+    ("glock", glockenspiel, 24000, False),
+    ("marimba", marimba, 22050, False),
+    ("organ", organ, 22050, True),
+    ("flute", flute, 22050, True),
+    ("harp", harp, 24000, False),
     ("cat", cat, 22050, False),
     ("dog", dog, 22050, False),
 ]
@@ -334,8 +336,10 @@ INSTRUMENTS = [
 def make_instrument(name, fn, sr, loop):
     folder = os.path.join(OUT, "Instruments", name)
     os.makedirs(folder, exist_ok=True)
+    keep = {f"{name}_{note:03d}.wav" for note in ROOT_NOTES}
     for f in os.listdir(folder):
-        if f.endswith(".wav"):
+        base = f[:-5] if f.endswith(".meta") else f
+        if f.endswith(".wav") or (f.endswith(".wav.meta") and base not in keep):
             os.remove(os.path.join(folder, f))
     for note in ROOT_NOTES:
         x = fn(note, sr)

@@ -458,6 +458,13 @@ namespace Piamo
 
         System.Collections.IEnumerator Preview(int[] notes)
         {
+            // WebGL では、えらんだ楽器の音を ブラウザが ほどきおわるまで 鳴らないので、まってから（3 びょうまで）
+            float wait = 0f;
+            while (!audioOut.InstrumentLoaded && wait < 3f)
+            {
+                wait += Time.unscaledDeltaTime;
+                yield return null;
+            }
             foreach (int n in notes)
             {
                 audioOut.NoteOn(n, 0.8f);

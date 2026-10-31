@@ -89,6 +89,36 @@ namespace Piamo
             WebBridge.RegisterPageEvents();
             Show(Page.Menu);
             Ready = true;
+            // 音の高さの けんさ：URL に ?pitchtest をつけると、すべての楽器の すべての音を じゅんに鳴らす
+            //（ブラウザで 鳴った音を はかるため。TESTING.md の「WebGL の音の高さ」を参照）
+            if (Application.absoluteURL.Contains("pitchtest")) StartCoroutine(PitchSweep());
+        }
+
+        System.Collections.IEnumerator PitchSweep()
+        {
+            yield return new WaitForSecondsRealtime(1f);
+            foreach (var info in InstrumentCatalog.All)
+            {
+                audioOut.SetInstrument(info.id);
+                float wait = 0f;
+                while (!audioOut.InstrumentLoaded && wait < 20f)
+                {
+                    wait += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+                Debug.Log($"[PitchTest] {info.id} {KeyboardLayout.LowestNote}-{KeyboardLayout.HighestNote}");
+                for (int n = KeyboardLayout.LowestNote; n <= KeyboardLayout.HighestNote; n++)
+                {
+                    audioOut.NoteOn(n, 0.3f);
+                    yield return new WaitForSecondsRealtime(0.06f);
+                    audioOut.NoteOff(n);
+                    yield return new WaitForSecondsRealtime(0.02f);
+                }
+                audioOut.AllOff(true);
+                yield return new WaitForSecondsRealtime(0.3f);
+            }
+            audioOut.SetInstrument(SaveSystem.Settings.instrument);
+            Debug.Log("[PitchTest] done");
         }
 
         void OnDestroy()

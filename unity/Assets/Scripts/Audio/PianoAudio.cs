@@ -48,10 +48,23 @@ namespace Piamo
         public float Volume { get; set; } = 0.8f;
         public bool Sustain { get; set; }
         public bool UiSounds { get; set; } = true;
-        /// <summary>テスト用：最後に鳴らした音（MIDI 番号）と、鳴らした回数。</summary>
+        /// <summary>テスト用：最後に鳴らした音（MIDI 番号）と、鳴らした回数・つかった音のファイル・AudioSource の pitch。</summary>
         public int LastNote { get; private set; } = -1;
+        public AudioClip LastClip { get; private set; }
+        public float LastPitch { get; private set; } = 1f;
         public int NotesPlayed { get; private set; }
         public string LastSfx { get; private set; }
+
+        /// <summary>いまの楽器の音が ぜんぶ読みこめたか（WebGL では、えらんでから すこし かかる）。</summary>
+        public bool InstrumentLoaded
+        {
+            get
+            {
+                if (_current == null) return false;
+                foreach (var c in _current.clips) if (c != null && c.loadState != AudioDataLoadState.Loaded) return false;
+                return true;
+            }
+        }
 
         public int ActiveVoices
         {
@@ -124,9 +137,16 @@ namespace Piamo
             {
                 if (v.note == note && v.src.isPlaying) StartFade(v, 0.05f);
             }
-            int idx = InstrumentBank.Nearest(_current.roots, note);
+            // その高さの音のファイルを そのまま鳴らす（音の高さは変えない。WebGL の pitch は ずれるため）
+            int idx = InstrumentBank.IndexOf(_current.roots, note);
+            if (idx < 0)
+            {
+                Debug.LogWarning($"[Audio] {_info.id} に {note} の音がありません");
+                return;
+            }
             var clip = _current.clips[idx];
             if (clip == null) return;
+            LastClip = clip;
             var voice = PickVoice();
             voice.note = note;
             voice.held = true;
@@ -141,7 +161,8 @@ namespace Piamo
             src.Stop();
             src.clip = clip;
             src.loop = _info.loop;
-            src.pitch = InstrumentBank.PitchFor(_current.roots[idx], note);
+            src.pitch = 1f;
+            LastPitch = src.pitch;
             src.panStereo = Mathf.Clamp((note - 66) / 40f, -0.5f, 0.5f);
             src.volume = voice.level * voice.gain * Volume;
             src.Play();

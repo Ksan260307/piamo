@@ -49,7 +49,9 @@ namespace Piamo
 
     /// <summary>
     /// 楽器の音（AudioClip）のたば。ProjectSetup が Assets/Audio/Instruments から作る。
-    /// 楽器ごとに 4 半音おきの音があり、あいだの音は近い音の高さを変えて鳴らす。
+    /// 楽器ごとに、鳴らせる はんい（C2〜C7）の すべての半音の音がある。
+    /// AudioSource.pitch で音の高さを変えると、WebGL では Unity が 48000/44100 倍などに ずらしてしまうので、
+    /// どの音も その高さの音を pitch = 1 のまま鳴らす。
     /// </summary>
     [CreateAssetMenu(menuName = "Piamo/Instrument Bank")]
     public class InstrumentBank : ScriptableObject
@@ -71,23 +73,7 @@ namespace Piamo
             return instruments.Count > 0 ? instruments[0] : null;
         }
 
-        /// <summary>note にいちばん近い音の番号。</summary>
-        public static int Nearest(int[] roots, int note)
-        {
-            int best = 0, bestDist = int.MaxValue;
-            for (int i = 0; i < roots.Length; i++)
-            {
-                int d = Mathf.Abs(roots[i] - note);
-                if (d < bestDist)
-                {
-                    bestDist = d;
-                    best = i;
-                }
-            }
-            return best;
-        }
-
-        /// <summary>root の音を、note の高さで鳴らすときの再生の速さ。</summary>
-        public static float PitchFor(int root, int note) => Mathf.Pow(2f, (note - root) / 12f);
+        /// <summary>note の音の番号（なければ -1）。</summary>
+        public static int IndexOf(int[] roots, int note) => Array.IndexOf(roots, note);
     }
 }
