@@ -459,6 +459,33 @@
     margin-top: 4px;
 }
 
+/* ながい なまえの 曲は 字を小さく（2 行に わかれないように） */
+.song-card.song-card--long .candy__label {
+    font-size: 24px;
+    white-space: nowrap;
+}
+
+.landscape .song-card.song-card--long .candy__label {
+    font-size: 20px;
+}
+
+.short .song-card.song-card--long .candy__label {
+    font-size: 15px;
+}
+
+.song-card.song-card--xlong .candy__label {
+    font-size: 20px;
+    white-space: nowrap;
+}
+
+.landscape .song-card.song-card--xlong .candy__label {
+    font-size: 16px;
+}
+
+.short .song-card.song-card--xlong .candy__label {
+    font-size: 13px;
+}
+
 .song-card__star {
     position: absolute;
     top: 6px;
@@ -603,6 +630,410 @@
 .short .dot {
     width: 34px;
     height: 34px;
+}
+
+/* えんそう */
+.perform-panel {
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.perform-section {
+    width: 100%;
+    font-size: 34px;
+    color: rgb(130, 100, 86);
+    -unity-text-align: middle-center;
+    margin: 16px 0 2px 0;
+}
+
+.song-card__stars {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    flex-direction: row;
+}
+
+.song-card__level {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    flex-direction: row;
+}
+
+.mini-star {
+    width: 34px;
+    height: 34px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.mini-note {
+    width: 26px;
+    height: 26px;
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgb(255, 150, 180);
+}
+
+.short .mini-star {
+    width: 24px;
+    height: 24px;
+}
+
+.short .mini-note {
+    width: 18px;
+    height: 18px;
+}
+
+/* 鍵盤と おなじ はばに（stage の よこの すきまを うちけす） */
+.perform-game {
+    flex-grow: 1;
+    margin: 0 -26px;
+}
+
+.perform-hud {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 26px 4px 26px;
+    flex-shrink: 0;
+}
+
+.perform-head {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 1;
+    margin-right: 18px;
+}
+
+.perform-animal {
+    width: 110px;
+    height: 110px;
+    -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
+}
+
+.perform-info {
+    width: 320px;
+    margin-left: 10px;
+    flex-shrink: 1;
+}
+
+.perform-title {
+    font-size: 40px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.perform-progress {
+    height: 18px;
+    border-radius: 9px;
+    background-color: rgba(255, 255, 255, 0.85);
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.perform-progress__fill {
+    height: 100%;
+    width: 0;
+    border-radius: 9px;
+    background-color: rgb(255, 160, 190);
+}
+
+.perform-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+
+.perform-modes {
+    margin-right: 10px;
+}
+
+.perform-modes .tab {
+    font-size: 34px;
+    padding: 10px 22px;
+}
+
+.perform-button {
+    margin: 0 6px;
+    width: 100px;
+    height: 100px;
+}
+
+.perform-speed {
+    margin: 0 6px;
+}
+
+.perform-lane {
+    flex-grow: 1;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.28);
+    border-top-width: 3px;
+    border-color: rgba(255, 255, 255, 0.6);
+    margin-top: 6px;
+}
+
+.perform-hitline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 8px;
+    background-color: rgba(255, 140, 175, 0.55);
+}
+
+.lane-note {
+    position: absolute;
+    border-radius: 18px;
+    border-width: 4px;
+    border-color: rgba(255, 255, 255, 0.95);
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.lane-note--black {
+    border-color: rgba(70, 60, 92, 0.9);
+}
+
+.lane-note--hit {
+    border-color: rgb(255, 210, 70);
+}
+
+.lane-note--miss {
+    opacity: 0.45;
+}
+
+.lane-note__label {
+    color: rgb(255, 255, 255);
+    font-size: 30px;
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 0.4px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.3);
+    margin-bottom: 2px;
+}
+
+.perform-count {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    font-size: 200px;
+    color: rgb(255, 255, 255);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgba(226, 108, 146, 0.9);
+}
+
+.perform-bubble {
+    position: absolute;
+    top: 12px;
+    left: 18%;
+    right: 18%;
+    font-size: 34px;
+    padding: 10px 24px;
+}
+
+.judge {
+    position: absolute;
+    width: 240px;
+    height: 58px;
+    font-size: 34px;
+    color: rgb(255, 255, 255);
+    background-color: rgb(255, 120, 160);
+    border-radius: 29px;
+    border-width: 4px;
+    border-color: rgb(255, 255, 255);
+    -unity-text-align: middle-center;
+    padding: 0;
+}
+
+.judge--good {
+    background-color: rgb(90, 170, 225);
+}
+
+.perform-result {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 247, 236, 0.55);
+}
+
+.perform-result__card {
+    background-color: rgb(255, 255, 255);
+    border-radius: 44px;
+    border-width: 6px;
+    border-color: rgb(255, 205, 70);
+    padding: 16px 30px;
+    align-items: center;
+}
+
+.perform-result__text {
+    font-size: 44px;
+}
+
+.perform-result__stars {
+    flex-direction: row;
+    margin: 6px 0;
+}
+
+.result-star {
+    width: 90px;
+    height: 90px;
+    margin: 0 6px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.result-star--off {
+    opacity: 0.22;
+}
+
+.perform-result__detail {
+    font-size: 30px;
+    color: rgb(130, 100, 86);
+    margin-bottom: 8px;
+}
+
+.perform-result__buttons {
+    flex-direction: row;
+}
+
+.perform-result__buttons .candy {
+    margin: 0 10px;
+    font-size: 34px;
+    padding: 10px 26px 6px 18px;
+}
+
+.perform-result__buttons .candy__icon {
+    width: 54px;
+    height: 54px;
+}
+
+.portrait .perform-hud {
+    padding: 4px 12px;
+}
+
+.portrait .perform-head {
+    margin: 0 0 6px 0;
+}
+
+.portrait .perform-info {
+    width: 560px;
+}
+
+.portrait .perform-animal {
+    width: 96px;
+    height: 96px;
+}
+
+.portrait .perform-modes {
+    margin: 0 0 8px 0;
+}
+
+.portrait .perform-modes .tab {
+    font-size: 30px;
+    padding: 8px 16px;
+}
+
+.portrait .perform-bubble {
+    left: 4%;
+    right: 4%;
+    font-size: 28px;
+}
+
+.short .perform-hud {
+    padding: 2px 16px 0 16px;
+}
+
+.short .perform-animal {
+    width: 76px;
+    height: 76px;
+}
+
+.short .perform-title {
+    font-size: 30px;
+}
+
+.short .perform-info {
+    width: 300px;
+}
+
+.short .perform-progress {
+    height: 14px;
+    margin-top: 4px;
+}
+
+.short .perform-modes .tab {
+    font-size: 28px;
+    padding: 6px 16px;
+}
+
+.short .perform-button {
+    width: 80px;
+    height: 80px;
+    border-bottom-width: 8px;
+}
+
+.short .perform-button .candy__icon {
+    width: 46px;
+    height: 46px;
+}
+
+.short .perform-speed {
+    padding: 6px 18px 4px 10px;
+    font-size: 30px;
+    border-bottom-width: 8px;
+}
+
+.short .perform-speed .candy__icon {
+    width: 46px;
+    height: 46px;
+}
+
+.short .perform-count {
+    font-size: 130px;
+}
+
+.short .perform-bubble {
+    font-size: 28px;
+    top: 6px;
+}
+
+.short .judge {
+    font-size: 26px;
+    width: 190px;
+    height: 46px;
+    border-radius: 23px;
+}
+
+.short .result-star {
+    width: 60px;
+    height: 60px;
+}
+
+.short .perform-result__text {
+    font-size: 34px;
+}
+
+.short .perform-result__detail {
+    font-size: 26px;
+    margin-bottom: 4px;
+}
+
+.short .perform-result__buttons .candy {
+    font-size: 28px;
+    padding: 6px 20px 4px 12px;
+}
+
+.short .perform-section {
+    font-size: 28px;
+    margin: 8px 0 0 0;
 }
 
 /* 鍵盤のスクロール */
@@ -1336,8 +1767,8 @@
 }
 
 .portrait .tab {
-    font-size: 30px;
-    padding: 8px 18px;
+    font-size: 27px;
+    padding: 8px 12px;
 }
 
 .portrait .back-button {

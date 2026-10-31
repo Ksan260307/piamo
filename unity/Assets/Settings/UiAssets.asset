@@ -16,6 +16,8 @@ MonoBehaviour:
   titleFont: {fileID: 12800000, guid: a5ec1b3dcdfa2b44c98b2370137c0738, type: 3}
   logo: {fileID: 2800000, guid: c534f81d06db8fd40993aee5d9463142, type: 3}
   icons:
+  - name: again
+    texture: {fileID: 2800000, guid: 69f1e303f32bbb54983b0fbaa67cfec0, type: 3}
   - name: back
     texture: {fileID: 2800000, guid: aa67ee39425ee5b43a675b310532ea56, type: 3}
   - name: ear
@@ -52,8 +54,12 @@ MonoBehaviour:
     texture: {fileID: 2800000, guid: 3d2c86bf48e215149ab558904456d4a4, type: 3}
   - name: note2
     texture: {fileID: 2800000, guid: 10400a52641de8d41a22b1d3ff78b273, type: 3}
+  - name: pause
+    texture: {fileID: 2800000, guid: 6c9c1ebc55e4df24a8e099b59c569706, type: 3}
   - name: piano
     texture: {fileID: 2800000, guid: c45ea7ed8aad7eb42aca44a05b63d8cd, type: 3}
+  - name: play
+    texture: {fileID: 2800000, guid: c168edca07163184a89ba2b5fb11140f, type: 3}
   - name: plus
     texture: {fileID: 2800000, guid: eb5c8af8576c0bd498fd7f77e2c5886f, type: 3}
   - name: right
@@ -64,6 +70,8 @@ MonoBehaviour:
     texture: {fileID: 2800000, guid: 81fc74a74323adf45a69c57682d6ed70, type: 3}
   - name: sec_parents
     texture: {fileID: 2800000, guid: f322bf0389f6b71449e7ed479e643a49, type: 3}
+  - name: sec_perform
+    texture: {fileID: 2800000, guid: 37c8330aeedcd8e46b4ebf93edf93d8b, type: 3}
   - name: sec_screen
     texture: {fileID: 2800000, guid: b13d588b6ca64cf449fe580123b429bc, type: 3}
   - name: sec_sound
@@ -78,6 +86,8 @@ MonoBehaviour:
     texture: {fileID: 2800000, guid: e613ca24b3a5f2c409377f0f465b9fb6, type: 3}
   - name: songs
     texture: {fileID: 2800000, guid: 5255ce6a170b4824181051ad5b976b69, type: 3}
+  - name: speed
+    texture: {fileID: 2800000, guid: d7599333cc69b4143973973aeb44a0dc, type: 3}
   - name: stamp
     texture: {fileID: 2800000, guid: ed612a78fb4456243ba2d6a44a87f15c, type: 3}
   - name: star
@@ -89,12 +99,16 @@ MonoBehaviour:
   characters:
   - name: bear
     texture: {fileID: 2800000, guid: 98d01ee322dd1a14282cd0da3504395d, type: 3}
+  - name: bee
+    texture: {fileID: 2800000, guid: c1da6a1edc1a40541bd3aff4bf0f1aeb, type: 3}
   - name: bird
     texture: {fileID: 2800000, guid: 04d2aaceebed870439d416b9ccceadcd, type: 3}
   - name: cat
     texture: {fileID: 2800000, guid: f90e32ed780b35d49b0b203e3b19c1c5, type: 3}
   - name: chick
     texture: {fileID: 2800000, guid: 1a3321eb248c6f7438b5d96fc32ae9d5, type: 3}
+  - name: crab
+    texture: {fileID: 2800000, guid: 7ebafce8f5895a94397e66ffed0e7362, type: 3}
   - name: dog
     texture: {fileID: 2800000, guid: 9eb51049514e5d14e8ccf36e2039e48f, type: 3}
   - name: duck

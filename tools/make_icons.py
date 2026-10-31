@@ -233,6 +233,52 @@ def d_sec_parents(cv):
     h.draw(cv, OUT, 1.4)
 
 
+# えんそう ---------------------------------------------------------------------
+def d_play(cv):
+    g_draw(cv, [(round_poly([(30, 16), (84, 50), (30, 84)], 0.2, 8), WHITE)])
+
+
+def d_pause(cv):
+    g_draw(cv, [(rounded_rect_pts(22, 18, 42, 82, 8), WHITE), (rounded_rect_pts(58, 18, 78, 82, 8), WHITE)])
+
+
+def d_again(cv):
+    # ぐるっと まわる やじるし
+    a0, a1, r_out, r_in = math.radians(-40), math.radians(230), 36, 22
+    outer = [(50 + math.cos(a0 + (a1 - a0) * i / 40) * r_out, 52 + math.sin(a0 + (a1 - a0) * i / 40) * r_out) for i in range(41)]
+    inner = [(50 + math.cos(a1 - (a1 - a0) * i / 40) * r_in, 52 + math.sin(a1 - (a1 - a0) * i / 40) * r_in) for i in range(41)]
+    ex, ey = 50 + math.cos(a0) * 29, 52 + math.sin(a0) * 29
+    tx, ty = math.cos(a0 + math.pi / 2), math.sin(a0 + math.pi / 2)   # すすむ向き
+    nx, ny = math.cos(a0), math.sin(a0)
+    head = [(ex + nx * 19, ey + ny * 19), (ex - tx * 22, ey - ty * 22), (ex - nx * 19, ey - ny * 19)]
+    g = Group()
+    g.add(outer + inner, PINK)
+    g.add(round_poly(head, 0.15, 4), PINK)
+    g.draw(cv, OUT, W)
+
+
+def d_speed(cv):
+    # メトロノーム
+    g = Group()
+    g.add(round_poly([(36, 12), (64, 12), (84, 88), (16, 88)], 0.14, 5), WHITE)
+    g.draw(cv, OUT, W)
+    arm = Group()
+    ms.thick(arm, [(50, 80), (68, 26)], 7, PINK)
+    arm.add(rounded_rect_pts(55, 40, 71, 52, 4), PINK)
+    arm.draw(cv, OUT, 1.6)
+    base = Group()
+    base.add(rounded_rect_pts(22, 76, 78, 88, 5), hexc("#ffd45e"))
+    base.draw(cv, OUT, W * 0.8)
+
+
+def d_sec_perform(cv):
+    piano_shape(cv, 10, 52, 90, 92, PURPLE)
+    bars = Group()
+    for x, y0, y1, c in ((22, 10, 30, PINK), (40, 22, 44, YELLOW), (58, 6, 26, GREEN), (76, 18, 40, BLUE)):
+        bars.add(rounded_rect_pts(x - 7, y0, x + 7, y1, 5), c)
+    bars.draw(cv, OUT, 1.6)
+
+
 # 楽器 -------------------------------------------------------------------------
 def d_inst_piano(cv):
     g = Group()
@@ -349,6 +395,7 @@ ICONS = {
     "inst_piano": d_inst_piano, "inst_toy": d_inst_toy, "inst_musicbox": d_inst_musicbox, "inst_glock": d_inst_glock,
     "inst_marimba": d_inst_marimba, "inst_organ": d_inst_organ, "inst_flute": d_inst_flute, "inst_harp": d_inst_harp,
     "inst_cat": d_inst_animal("cat", "happy"), "inst_dog": d_inst_animal("dog", "happy"),
+    "play": d_play, "pause": d_pause, "again": d_again, "speed": d_speed, "sec_perform": d_sec_perform,
 }
 
 

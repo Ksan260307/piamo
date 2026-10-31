@@ -36,6 +36,7 @@
                 <ui:VisualElement name="mode-tabs" class="mode-tabs">
                     <ui:Button name="tab-free" text="じゆうに ひく" class="tab" />
                     <ui:Button name="tab-mimic" text="まねっこ" class="tab" />
+                    <ui:Button name="tab-perform" text="えんそう" class="tab" />
                 </ui:VisualElement>
                 <ui:Button name="play-settings" class="candy candy--blue round-button">
                     <ui:VisualElement name="play-settings-icon" class="candy__icon" picking-mode="Ignore" />
@@ -82,6 +83,70 @@
                                 <ui:VisualElement name="mimic-change-icon" class="candy__icon" picking-mode="Ignore" />
                                 <ui:Label text="きょくを かえる" class="candy__label" picking-mode="Ignore" />
                             </ui:Button>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- えんそう -->
+                <ui:VisualElement name="perform-panel" class="perform-panel hidden" picking-mode="Ignore">
+                    <ui:VisualElement name="perform-picker" class="perform-picker" picking-mode="Ignore">
+                        <ui:Label class="picker-title" text="どの きょくを ひく？" picking-mode="Ignore" />
+                        <ui:ScrollView name="perform-list" class="song-list perform-list" mode="Vertical" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="perform-game" class="perform-game hidden" picking-mode="Ignore">
+                        <ui:VisualElement name="perform-hud" class="perform-hud" picking-mode="Ignore">
+                            <ui:VisualElement class="perform-head" picking-mode="Ignore">
+                                <ui:VisualElement name="perform-animal" class="perform-animal" picking-mode="Ignore" />
+                                <ui:VisualElement class="perform-info" picking-mode="Ignore">
+                                    <ui:Label name="perform-title" class="perform-title" text="" picking-mode="Ignore" />
+                                    <ui:VisualElement class="perform-progress" picking-mode="Ignore">
+                                        <ui:VisualElement name="perform-progress-fill" class="perform-progress__fill" picking-mode="Ignore" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="perform-controls" picking-mode="Ignore">
+                                <ui:VisualElement name="perform-modes" class="mode-tabs perform-modes">
+                                    <ui:Button name="perform-mode-listen" text="きく" class="tab" />
+                                    <ui:Button name="perform-mode-along" text="いっしょに" class="tab" />
+                                    <ui:Button name="perform-mode-step" text="ひとつずつ" class="tab" />
+                                </ui:VisualElement>
+                                <ui:Button name="perform-play" class="candy candy--pink round-button perform-button">
+                                    <ui:VisualElement name="perform-play-icon" class="candy__icon" picking-mode="Ignore" />
+                                </ui:Button>
+                                <ui:Button name="perform-restart" class="candy candy--white round-button perform-button">
+                                    <ui:VisualElement name="perform-restart-icon" class="candy__icon" picking-mode="Ignore" />
+                                </ui:Button>
+                                <ui:Button name="perform-speed" class="candy candy--yellow chip perform-speed">
+                                    <ui:VisualElement name="perform-speed-icon" class="candy__icon" picking-mode="Ignore" />
+                                    <ui:Label name="perform-speed-label" text="ふつう" class="candy__label" picking-mode="Ignore" />
+                                </ui:Button>
+                                <ui:Button name="perform-change" class="candy candy--white round-button perform-button">
+                                    <ui:VisualElement name="perform-change-icon" class="candy__icon" picking-mode="Ignore" />
+                                </ui:Button>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="perform-lane" class="perform-lane" picking-mode="Ignore">
+                            <ui:VisualElement name="perform-notes" class="fill" picking-mode="Ignore" />
+                            <ui:VisualElement class="perform-hitline" picking-mode="Ignore" />
+                            <ui:Label name="perform-count" class="perform-count hidden" text="" picking-mode="Ignore" />
+                            <ui:Label name="perform-bubble" class="bubble perform-bubble hidden" text="" picking-mode="Ignore" />
+                            <ui:VisualElement name="perform-result" class="perform-result hidden" picking-mode="Ignore">
+                                <ui:VisualElement class="perform-result__card" picking-mode="Ignore">
+                                    <ui:Label name="perform-result-text" class="perform-result__text" text="" picking-mode="Ignore" />
+                                    <ui:VisualElement name="perform-result-stars" class="perform-result__stars" picking-mode="Ignore" />
+                                    <ui:Label name="perform-result-detail" class="perform-result__detail" text="" picking-mode="Ignore" />
+                                    <ui:VisualElement class="perform-result__buttons" picking-mode="Ignore">
+                                        <ui:Button name="perform-again" class="candy candy--yellow">
+                                            <ui:VisualElement name="perform-again-icon" class="candy__icon" picking-mode="Ignore" />
+                                            <ui:Label text="もういちど" class="candy__label" picking-mode="Ignore" />
+                                        </ui:Button>
+                                        <ui:Button name="perform-other" class="candy candy--white">
+                                            <ui:VisualElement name="perform-other-icon" class="candy__icon" picking-mode="Ignore" />
+                                            <ui:Label text="ほかの きょく" class="candy__label" picking-mode="Ignore" />
+                                        </ui:Button>
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>

@@ -155,11 +155,11 @@ namespace Piamo
 
         public bool IsHeld(int midi) => _holders.TryGetValue(midi, out var s) && s.Count > 0;
 
-        /// <summary>おてほんの音（light: 鍵盤もしずめて ひからせる）。</summary>
-        public void DemoDown(int midi, bool light)
+        /// <summary>おてほんの音（light: 鍵盤もしずめて ひからせる。velocity: 音の大きさ 0〜1）。</summary>
+        public void DemoDown(int midi, bool light, float velocity = 0.95f)
         {
             _demoDown.Add(midi);
-            audioOut?.NoteOn(midi, 0.95f);
+            audioOut?.NoteOn(midi, velocity);
             if (light) view.SetPressed(midi, true);
         }
 

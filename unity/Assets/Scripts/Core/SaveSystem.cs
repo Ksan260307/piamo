@@ -4,7 +4,15 @@ using UnityEngine;
 
 namespace Piamo
 {
-    /// <summary>保存するもの（せってい・スタンプ・まねっこで ひけた曲）。</summary>
+    /// <summary>えんそうで もらった ほし（曲ごとに いちばん よかったもの）。</summary>
+    [Serializable]
+    public class SongStars
+    {
+        public string id;
+        public int stars;
+    }
+
+    /// <summary>保存するもの（せってい・スタンプ・まねっこで ひけた曲・えんそうの ほし）。</summary>
     [Serializable]
     public class PiamoSave
     {
@@ -20,6 +28,8 @@ namespace Piamo
         public int playCount;
         /// <summary>まねっこで さいごまで ひけた曲の id。</summary>
         public List<string> clearedSongs = new List<string>();
+        /// <summary>えんそうの ほし。</summary>
+        public List<SongStars> performStars = new List<SongStars>();
 
         public void Repair()
         {
@@ -28,6 +38,17 @@ namespace Piamo
             stampDays ??= new List<int>();
             pendingDays ??= new List<int>();
             clearedSongs ??= new List<string>();
+            performStars ??= new List<SongStars>();
+            // こわれた ほしを なおす（id のないもの・はんいの外・だぶりは いちばん よいもの）
+            var best = new Dictionary<string, int>();
+            foreach (var p in performStars)
+            {
+                if (p == null || string.IsNullOrEmpty(p.id)) continue;
+                int v = Mathf.Clamp(p.stars, 0, 3);
+                if (!best.TryGetValue(p.id, out int b) || v > b) best[p.id] = v;
+            }
+            performStars.Clear();
+            foreach (var kv in best) if (kv.Value > 0) performStars.Add(new SongStars { id = kv.Key, stars = kv.Value });
             stampDays.RemoveAll(d => d <= 0);
             pendingDays.RemoveAll(d => d <= 0 || stampDays.Contains(d));
             // おなじ日の もらいすぎを なおす
@@ -35,6 +56,28 @@ namespace Piamo
             pendingDays.RemoveAll(d => !seen.Add(d));
             pendingDays.Sort();
             version = CurrentVersion;
+        }
+
+        public int StarsFor(string id)
+        {
+            foreach (var p in performStars) if (p.id == id) return p.stars;
+            return 0;
+        }
+
+        /// <summary>ほしを きろくする（いままでより よいときだけ）。よくなったら true。</summary>
+        public bool RecordStars(string id, int stars)
+        {
+            stars = Mathf.Clamp(stars, 0, 3);
+            foreach (var p in performStars)
+            {
+                if (p.id != id) continue;
+                if (stars <= p.stars) return false;
+                p.stars = stars;
+                return true;
+            }
+            if (stars <= 0) return false;
+            performStars.Add(new SongStars { id = id, stars = stars });
+            return true;
         }
     }
 
@@ -103,6 +146,7 @@ namespace Piamo
             Data.pendingDays.Clear();
             Data.playCount = 0;
             Data.clearedSongs.Clear();
+            Data.performStars.Clear();
             Save();
         }
 

@@ -142,6 +142,13 @@ namespace Piamo
             }
             Toggle(c, "demoLights", "おてほんで ひかる", "おてほんの とき、けんばんも ひからせます", () => SaveSystem.Settings.demoLights, v => SaveSystem.Settings.demoLights = v);
 
+            // ---------------- えんそう ----------------
+            Section(c, "えんそう", "sec_perform");
+            Choice(c, "performSpeed", "えんそうの はやさ", null, new[] { "ゆっくり", "ふつう", "はやい" },
+                () => SaveSystem.Settings.performSpeed, v => SaveSystem.Settings.performSpeed = v);
+            Toggle(c, "performMelody", "おてほんの メロディ", "「いっしょに」で、ひく メロディも アプリが ちいさく ならします", () => SaveSystem.Settings.performMelody, v => SaveSystem.Settings.performMelody = v);
+            Toggle(c, "performAccomp", "ばんそう", "ドミソの おとで、いっしょに ひいてくれます", () => SaveSystem.Settings.performAccomp, v => SaveSystem.Settings.performAccomp = v);
+
             // ---------------- がめん ----------------
             Section(c, "がめん", "sec_screen");
             Toggle(c, "noteEffects", "おんぷが とぶ", "けんばんを おすと ♪ が とびだします", () => SaveSystem.Settings.noteEffects, v => SaveSystem.Settings.noteEffects = v);

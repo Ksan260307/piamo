@@ -6,7 +6,7 @@ namespace Piamo
 {
     public partial class AppUI
     {
-        public enum PlayMode { Free, Mimic }
+        public enum PlayMode { Free, Mimic, Perform }
 
         public PlayMode Mode { get; private set; } = PlayMode.Free;
         public MimicGame Mimic { get; private set; }
@@ -45,6 +45,7 @@ namespace Piamo
             "ゆびで すーっと なぞると、つづけて なるよ",
             "なんぼんの ゆびでも いっしょに おせるよ",
             "「まねっこ」で きょくを ひいてみよう！",
+            "「えんそう」で、ひかる けんばんを いっしょに ひこう！",
         };
 
         static readonly Dictionary<string, string> InstrumentMascot = new Dictionary<string, string>
@@ -137,6 +138,7 @@ namespace Piamo
             HideScrollers(_root.Q<ScrollView>("inst-popup-scroll"));
             BuildSongList();
             BuildInstrumentPopup();
+            BuildPerform();
             SetMode(PlayMode.Free);
         }
 
@@ -145,7 +147,7 @@ namespace Piamo
         void EnterPlay()
         {
             _earnBanner.AddToClassList("hidden");
-            if (play != null) play.ApplySettings(SaveSystem.Settings);
+            if (play != null) play.ApplySettings(EffectiveSettings());
             RefreshPlayAfterSettings();
             UpdateStampMeter();
             OnLayoutPlay();
@@ -154,6 +156,7 @@ namespace Piamo
         void LeavePlay()
         {
             if (Mimic != null && Mimic.Current != MimicGame.State.Idle) StopSong();
+            if (_performSong != null) StopPerform();
             play?.ReleaseAll();
             input?.ReleaseAll();
             audioOut?.AllOff(false);
@@ -162,17 +165,21 @@ namespace Piamo
 
         public void SetMode(PlayMode m)
         {
+            // まねっこ と えんそう は いっしょに うごかない（おてほんの音・ひかる けんばん・けんばんの かずが ぶつからないように、ほかの モードは止める）
+            if (m != PlayMode.Mimic && Mimic != null && Mimic.Current != MimicGame.State.Idle) StopSong();
+            if (m != PlayMode.Perform && _performSong != null) StopPerform();
             Mode = m;
             _tabFree.EnableInClassList("tab--on", m == PlayMode.Free);
             _tabMimic.EnableInClassList("tab--on", m == PlayMode.Mimic);
+            _tabPerform.EnableInClassList("tab--on", m == PlayMode.Perform);
             _freePanel.EnableInClassList("hidden", m != PlayMode.Free);
             _mimicPanel.EnableInClassList("hidden", m != PlayMode.Mimic);
-            if (m == PlayMode.Free)
-            {
-                if (Mimic != null && Mimic.Current != MimicGame.State.Idle) StopSong();
-            }
-            else ShowPicker();
+            _performPanel.EnableInClassList("hidden", m != PlayMode.Perform);
+            if (m == PlayMode.Mimic) ShowPicker();
+            else if (m == PlayMode.Perform) ShowPerformPicker();
+            play?.view.SetHint(-1);
             OnLayoutPlay();
+            if (play != null && play.Layout != null) OnFramingChanged();
         }
 
         void RefreshPlayAfterSettings()
@@ -193,7 +200,9 @@ namespace Piamo
             var vt = _root.panel?.visualTree;
             if (vt == null || vt.layout.width < 1f) return;
             bool portrait = _root.ClassListContains("portrait");
-            float frac = Mode == PlayMode.Mimic ? (portrait ? 0.42f : 0.52f) : (portrait ? 0.5f : 0.62f);
+            float frac = Mode == PlayMode.Mimic ? (portrait ? 0.42f : 0.52f)
+                : Mode == PlayMode.Perform ? (portrait ? 0.4f : 0.46f)
+                : (portrait ? 0.5f : 0.62f);
             float k = PanelScale;
             float widthPx = Mathf.Max(1f, (_kbArea.layout.width > 1f ? _kbArea.layout.width : vt.layout.width) * k);
             float minKeyPx = SaveSystem.Settings.MinKeyWidthUI * k;
@@ -212,7 +221,8 @@ namespace Piamo
         void OnFramingChanged()
         {
             var f = play.Framing;
-            bool navOn = f.scrolling;
+            // えんそうの曲の あいだは、つぎの音に あわせて うごかすので、スクロールの帯は出さない（おちてくる音が 鍵盤に とどくように）
+            bool navOn = f.scrolling && !(Mode == PlayMode.Perform && _performSong != null);
             if (_nav.ClassListContains("hidden") == navOn) _nav.EnableInClassList("hidden", !navOn);
             if (navOn) RefreshNav();
         }
@@ -311,6 +321,7 @@ namespace Piamo
                 _hintArrow.style.top = lp.y - a * 1.15f + Mathf.Abs(Mathf.Sin(Time.unscaledTime * 6f)) * -a * 0.25f;
             }
             else if (!_hintArrow.ClassListContains("hidden")) _hintArrow.AddToClassList("hidden");
+            if (Mode == PlayMode.Perform) UpdateLane();
         }
 
         // ------------------------------------------------------------------
@@ -327,6 +338,12 @@ namespace Piamo
             }
             UpdateStampMeter();
             if (SaveSystem.Settings.noteEffects) SpawnNote(midi);
+            if (Mode == PlayMode.Perform && Perform != null && _performSong != null)
+            {
+                var pr = Perform.Press(midi);
+                if (pr == PerformGame.PressResult.Wrong && Perform.CurrentMode == PerformGame.Mode.Step)
+                    SetPerformBubble("ひかっている けんばんを おしてね");
+            }
             if (Mode == PlayMode.Mimic && Mimic != null && Mimic.Current == MimicGame.State.Listen)
             {
                 var r = Mimic.Press(midi);
@@ -485,10 +502,18 @@ namespace Piamo
                 var s = song;
                 string color = s.random ? "purple" : s.exercise ? "green" : "white";
                 var b = UIParts.Candy(s.title, color, Character(s.animal), () => StartSong(s), _songList, "song-card");
+                TitleSize(b, s.title);
                 var star = UIParts.El("icon song-card__star hidden", b);
                 UIParts.SetIcon(star, Icon("star"));
                 _songCards.Add((b, s.id, star));
             }
+        }
+
+        /// <summary>ながい なまえの 曲は、カードの字を小さく（2 行に わかれないように）。</summary>
+        static void TitleSize(Button card, string title)
+        {
+            if (title.Length >= 10) card.AddToClassList("song-card--xlong");
+            else if (title.Length >= 7) card.AddToClassList("song-card--long");
         }
 
         void ShowPicker()
@@ -629,7 +654,8 @@ namespace Piamo
                 Mimic.Update(dt * MimicTimeScale);
                 play.view.SetHint(Mimic.HintKey);
             }
-            else if (Mode == PlayMode.Free && play != null && play.view.HintKey >= 0) play.view.SetHint(-1);
+            else if (Mode != PlayMode.Mimic && play != null && play.view.HintKey >= 0) play.view.SetHint(-1);
+            UpdatePerform(dt, paused);
 
             // 先生・マスコットの うごき
             if (_bubbleTimer > 0f)

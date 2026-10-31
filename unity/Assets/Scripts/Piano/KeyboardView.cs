@@ -8,6 +8,7 @@ namespace Piamo
     ///  - 白鍵は、となりに黒鍵があるところだけ切りかいた形を使う（黒鍵をかくすと、切りかきのない形）
     ///  - よこに のばすとき（Stretch）は、鍵盤とケースの板だけを のばし、左右のそでは そのまま
     ///  - まねっこのヒントは、金色に ゆっくり ひかる
+    ///  - えんそうの「つぎに ひく けんばん」は、ドレミの いろで ひかる（Guide）
     /// </summary>
     public class KeyboardView : MonoBehaviour
     {
@@ -31,6 +32,9 @@ namespace Piamo
             public Color glowColor;
             public Color baseColor;
             public bool hint;
+            /// <summary>えんそうの ガイド（0 = なし、1 = いま ひく音。うすいのは つぎの音）。</summary>
+            public float guide;
+            public Color guideColor;
             public bool dirty = true;
         }
 
@@ -205,6 +209,30 @@ namespace Piamo
             }
         }
 
+        /// <summary>えんそうの ガイド。level 0 で けす、1 で「いま ひく音」（ゆっくり またたく）、そのあいだは うすく。</summary>
+        public void SetGuide(int midi, float level, Color color)
+        {
+            if (!_keys.TryGetValue(midi, out var k)) return;
+            level = Mathf.Clamp01(level);
+            if (Mathf.Approximately(k.guide, level) && k.guideColor == color) return;
+            k.guide = level;
+            k.guideColor = color;
+            k.dirty = true;
+        }
+
+        public void ClearGuides()
+        {
+            foreach (var k in _list)
+            {
+                if (k.guide <= 0f) continue;
+                k.guide = 0f;
+                k.dirty = true;
+            }
+        }
+
+        /// <summary>ガイドの つよさ（テスト用）。</summary>
+        public float GuideLevel(int midi) => _keys.TryGetValue(midi, out var k) ? k.guide : 0f;
+
         /// <summary>鍵盤の上の面の、ラベルを書く場所（ワールド座標）。白鍵は手前、黒鍵はまんなかへん。</summary>
         public Vector3 LabelPoint(int midi)
         {
@@ -249,7 +277,7 @@ namespace Piamo
                     k.glow = Mathf.Max(0f, k.glow - dt / 0.45f);
                     k.dirty = true;
                 }
-                if (k.hint) k.dirty = true;
+                if (k.hint || k.guide >= 0.99f) k.dirty = true;
                 if (!k.dirty && !moved) continue;
                 k.dirty = false;
                 Color baseCol = k.baseColor;
@@ -259,6 +287,14 @@ namespace Piamo
                     float g = k.glow;
                     baseCol = Color.Lerp(baseCol, k.glowColor, (k.info.black ? 0.55f : 0.45f) * g);
                     emit += k.glowColor * (0.35f * g);
+                }
+                if (k.guide > 0f)
+                {
+                    // いま ひく音は またたく、つぎの音は うすく
+                    float pulse = k.guide >= 0.99f ? 0.5f + 0.5f * Mathf.Sin(t * 7f) : 0f;
+                    float a = k.guide * (k.info.black ? 0.6f : 0.5f) + 0.2f * pulse * k.guide;
+                    baseCol = Color.Lerp(baseCol, k.guideColor, a);
+                    emit += k.guideColor * (0.3f * k.guide + 0.3f * pulse * k.guide);
                 }
                 if (k.hint)
                 {

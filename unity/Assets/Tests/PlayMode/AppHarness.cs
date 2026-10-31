@@ -32,6 +32,7 @@ namespace Piamo.Tests
             }
             AppClock.TodayOverride = () => Today;
             AppUI.MimicTimeScale = 1f;
+            AppUI.PerformTimeScale = 1f;
             PianoInput.VirtualPointers.Clear();
             PianoInput.VirtualQuickTaps.Clear();
             Time.timeScale = 1f;
@@ -55,6 +56,7 @@ namespace Piamo.Tests
             PianoInput.VirtualPointers.Clear();
             AppClock.TodayOverride = null;
             AppUI.MimicTimeScale = 1f;
+            AppUI.PerformTimeScale = 1f;
             SaveSystem.ResetAll();
             SaveSystem.KeyOverride = null;
             SaveSystem.Load();

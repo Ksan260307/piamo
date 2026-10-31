@@ -167,11 +167,13 @@ namespace Piamo.Tests
             Assert.IsNotNull(ui.titleFont);
             Assert.IsNotNull(ui.logo);
             foreach (var s in Songs.All) Assert.IsNotNull(ui.Character(s.animal), $"{s.title} の先生 {s.animal}");
+            foreach (var s in PerformSongs.All) Assert.IsNotNull(ui.Character(s.animal), $"えんそう {s.title} の {s.animal}");
             foreach (var a in new[] { "cat", "rabbit", "bear", "frog", "panda", "chick", "monkey", "elephant", "bird", "sheep", "dog" })
                 Assert.IsNotNull(ui.Character(a), a);
             foreach (var info in InstrumentCatalog.All) Assert.IsNotNull(ui.Icon("inst_" + info.id), info.id);
             foreach (var i in new[] { "back", "gear", "piano", "stamp", "left", "right", "minus", "plus", "star", "note1", "note2", "hint", "ear", "songs",
-                         "volume_low", "volume_high", "sec_sound", "sec_keys", "sec_mimic", "sec_screen", "sec_parents" })
+                         "volume_low", "volume_high", "sec_sound", "sec_keys", "sec_mimic", "sec_screen", "sec_parents",
+                         "play", "pause", "again", "speed", "sec_perform" })
                 Assert.IsNotNull(ui.Icon(i), i);
         }
 
@@ -269,7 +271,9 @@ namespace Piamo.Tests
             var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/UI/Main.uxml");
             var root = vta.Instantiate();
             foreach (var n in new[] { "menu", "play", "stamps", "settings", "btn-play", "btn-stamps", "btn-settings",
-                         "play-back", "stamps-back", "settings-back", "play-settings", "tab-free", "tab-mimic", "keyboard-area" })
+                         "play-back", "stamps-back", "settings-back", "play-settings", "tab-free", "tab-mimic", "tab-perform", "keyboard-area",
+                         "perform-panel", "perform-list", "perform-lane", "perform-play", "perform-restart", "perform-speed", "perform-change",
+                         "perform-mode-listen", "perform-mode-along", "perform-mode-step", "perform-again", "perform-other" })
                 Assert.IsNotNull(root.Q(n), n);
         }
     }

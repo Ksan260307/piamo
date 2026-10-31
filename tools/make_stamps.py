@@ -2,6 +2,7 @@
 どうぶつの スタンプ 365 こ と、UI で使う どうぶつの絵を作る（PIL）。
   python tools/make_stamps.py            # スタンプ 365 こ ＋ どうぶつの絵 ＋ 一覧の絵
   python tools/make_stamps.py --preview  # 一覧の絵（tools/previews/）だけ
+  python tools/make_stamps.py --characters  # どうぶつの絵（UI/Characters）だけ
 
 出力:
  - unity/Assets/StreamingAssets/Stamps/stamp_001.png … stamp_365.png
@@ -1366,6 +1367,7 @@ CHARACTERS = {
     "lion": ("lion", "smile", 0, "crown"), "duck": ("duck", "smile", 0, "none"), "penguin": ("penguin", "happy", 0, "none"),
     "monkey": ("monkey", "smile", 0, "none"), "elephant": ("elephant", "smile", 0, "none"), "bird": ("bird", "smile", 0, "none"),
     "fox": ("fox", "smile", 0, "none"), "pig": ("pig", "happy", 0, "none"), "koala": ("koala", "calm", 0, "none"),
+    "bee": ("bee", "happy", 0, "none"), "crab": ("crab", "smile", 0, "none"),
 }
 
 
@@ -1380,7 +1382,17 @@ def contact_sheet(images, cols=20, cell=96, pad=6, bg=(255, 250, 240, 255)):
     return sheet
 
 
+def write_characters():
+    os.makedirs(OUT_CHARS, exist_ok=True)
+    for name, (sp, expr, variant, acc) in CHARACTERS.items():
+        render_character(sp, 320, expr, variant, acc).save(os.path.join(OUT_CHARS, f"{name}.png"), optimize=True)
+
+
 def main(argv):
+    if "--characters" in argv:   # どうぶつの絵だけ（スタンプは 作りなおさない）
+        write_characters()
+        print("wrote", len(CHARACTERS), "characters")
+        return
     preview_only = "--preview" in argv
     plans = plan()
     images = []
@@ -1399,9 +1411,7 @@ def main(argv):
         with open(OUT_JSON, "w", encoding="utf-8") as fp:
             json.dump({"stamps": [{"no": p["no"], "name": p["name"], "animal": p["animal"], "big": p["big"]} for p in plans]},
                       fp, ensure_ascii=False, indent=1)
-        os.makedirs(OUT_CHARS, exist_ok=True)
-        for name, (sp, expr, variant, acc) in CHARACTERS.items():
-            render_character(sp, 320, expr, variant, acc).save(os.path.join(OUT_CHARS, f"{name}.png"), optimize=True)
+        write_characters()
         print("wrote", len(plans), "stamps,", len(CHARACTERS), "characters")
     os.makedirs(OUT_PREVIEW, exist_ok=True)
     contact_sheet(images).save(os.path.join(OUT_PREVIEW, "stamps_sheet.png"))

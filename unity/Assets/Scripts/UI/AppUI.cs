@@ -257,9 +257,9 @@ namespace Piamo
         void OnSettingsChanged()
         {
             ApplyBackground();
-            var s = SaveSystem.Settings;
-            if (play != null) play.ApplySettings(s);
+            if (play != null) play.ApplySettings(EffectiveSettings());
             RefreshPlayAfterSettings();
+            RefreshPerformAfterSettings();
             RefreshSettings();
             if (Current == Page.Menu) RefreshMenu();
         }
@@ -383,6 +383,13 @@ namespace Piamo
         public void OnPageHidden()
         {
             SaveSystem.Save();
+            // えんそうの とちゅうなら 止めておく（もどってきたら ▶ で つづき）
+            if (_performSong != null && Perform != null && (Perform.Current == PerformGame.State.CountIn || Perform.Current == PerformGame.State.Playing))
+            {
+                _performUserPaused = true;
+                Perform.SetPaused(true);
+                RefreshPerformControls();
+            }
             play?.ReleaseAll();
             audioOut?.AllOff(false);
         }

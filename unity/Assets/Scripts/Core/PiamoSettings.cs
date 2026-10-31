@@ -37,6 +37,16 @@ namespace Piamo
         /// <summary>おてほんを ひくとき、けんばんも ひからせる。</summary>
         public bool demoLights = true;
 
+        // えんそう
+        /// <summary>えんそうの しかた（0 きく・1 いっしょに・2 ひとつずつ）。</summary>
+        public int performMode = 1;
+        /// <summary>えんそうの はやさ（0 ゆっくり・1 ふつう・2 はやい）。</summary>
+        public int performSpeed = 1;
+        /// <summary>「いっしょに」で、おてほんの メロディも ならす。</summary>
+        public bool performMelody = true;
+        /// <summary>ばんそう（ドミソの おと）を ならす。</summary>
+        public bool performAccomp = true;
+
         // がめん
         public bool noteEffects = true;
         public bool uiSounds = true;
@@ -57,6 +67,8 @@ namespace Piamo
             mimicSpeed = Mathf.Clamp(mimicSpeed, 0, 2);
             mimicLength = Mathf.Clamp(mimicLength, 0, 2);
             hintSeconds = Mathf.Clamp(hintSeconds, 0, 60);
+            performMode = Mathf.Clamp(performMode, 0, 2);
+            performSpeed = Mathf.Clamp(performSpeed, 0, 2);
             theme = Mathf.Clamp(theme, 0, Themes.Count - 1);
         }
 
@@ -67,6 +79,9 @@ namespace Piamo
         /// はじめの 8 けんが ぜんぶ見える はば。
         /// </summary>
         public float MinKeyWidthUI => keySize == 0 ? 72f : keySize == 2 ? 140f : 96f;
+
+        /// <summary>えんそうの はやさの かけ算（ゆっくり・ふつう・はやい）。</summary>
+        public float PerformTempo => performSpeed == 0 ? 0.75f : performSpeed == 2 ? 1.2f : 1f;
     }
 
     /// <summary>ピアノのケースの いろ。</summary>
