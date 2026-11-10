@@ -93,7 +93,7 @@ namespace Piamo.EditorTools
         {
             PlayerSettings.companyName = "Ksan";
             PlayerSettings.productName = "Piamo";
-            PlayerSettings.bundleVersion = "1.0.0";
+            PlayerSettings.bundleVersion = "1.1.0";
             PlayerSettings.colorSpace = ColorSpace.Linear;
             PlayerSettings.runInBackground = false;
             PlayerSettings.SplashScreen.show = false;

@@ -89,11 +89,143 @@ namespace Piamo.Tests
             g.DemoNoteOff += m => off.Add(m);
             g.Start(Simple, 1, 1f, 10f, 0);
             Assert.AreEqual(MimicGame.State.Intro, g.Current);
-            Assert.AreEqual(MimicGame.PressResult.Ignored, g.Press(60), "おてほんの前は数えない");
+            Assert.AreEqual(MimicGame.PressResult.Ignored, g.Press(65), "おてほんの前の ちがう音は 数えない");
+            Assert.AreEqual(0, g.Mistakes);
             ToListen(g);
             CollectionAssert.AreEqual(new[] { 60, 62, 64 }, on);
-            CollectionAssert.AreEquivalent(new[] { 60, 62, 64 }, off, "おてほんの音は ぜんぶ止める");
             Assert.AreEqual(60, g.Expected);
+            Run(g, 1f);
+            CollectionAssert.AreEquivalent(new[] { 60, 62, 64 }, off, "まねする番に なっても、のこりの おてほんの音は 鳴らしおえて 止める");
+        }
+
+        [Test]
+        public void ListeningStartsAsSoonAsTheLastDemoNoteBegins()
+        {
+            var g = new MimicGame();
+            int lastOn = -1;
+            bool lastOff = false;
+            g.DemoNoteOn += (m, d) => lastOn = m;
+            g.DemoNoteOff += m => { if (m == 64) lastOff = true; };
+            g.Start(Simple, 1, 1f, 10f, 0);
+            ToListen(g);
+            Assert.AreEqual(64, lastOn, "さいごの音（ミ）が 鳴りはじめている");
+            Assert.IsFalse(lastOff, "まだ 鳴っている うちに まねする番");
+            Assert.AreEqual(3, g.DemoPlayed);
+            Assert.AreEqual(MimicGame.PressResult.Correct, g.Press(60), "鳴っている とちゅうでも 数える");
+        }
+
+        [Test]
+        public void TheRightFirstNoteDuringTheDemoStopsItAndCounts()
+        {
+            var g = new MimicGame();
+            var on = new List<int>();
+            var off = new List<int>();
+            g.DemoNoteOn += (m, d) => on.Add(m);
+            g.DemoNoteOff += m => off.Add(m);
+            g.Start(Simple, 1, 1f, 10f, 0);
+            Run(g, MimicGame.IntroSeconds + 0.1f);
+            Assert.AreEqual(MimicGame.State.Demo, g.Current);
+            Assert.AreEqual(MimicGame.PressResult.Ignored, g.Press(71), "おてほん中の ちがう音は 数えない");
+            Assert.AreEqual(MimicGame.State.Demo, g.Current, "おてほんも 止めない");
+            Assert.AreEqual(0, g.Mistakes);
+            Assert.AreEqual(MimicGame.PressResult.Correct, g.Press(60), "はじめの音（ド）なら まねする番へ");
+            Assert.AreEqual(MimicGame.State.Listen, g.Current);
+            Assert.AreEqual(1, g.Progress);
+            CollectionAssert.Contains(off, 60, "鳴っていた おてほんは 止める");
+            int before = on.Count;
+            Run(g, 3f);
+            Assert.AreEqual(before, on.Count, "のこりの おてほんは 鳴らさない");
+            Assert.AreEqual(62, g.Expected);
+        }
+
+        [Test]
+        public void TheFirstNoteDuringTheIntroSkipsTheDemo()
+        {
+            var g = new MimicGame();
+            int demo = 0;
+            g.DemoNoteOn += (m, d) => demo++;
+            g.Start(Simple, 1, 1f, 10f, 0);
+            Assert.AreEqual(MimicGame.PressResult.Correct, g.Press(60));
+            Assert.AreEqual(MimicGame.State.Listen, g.Current);
+            Run(g, 2f);
+            Assert.AreEqual(0, demo, "おてほんは とばす");
+        }
+
+        [Test]
+        public void TheNextFirstNoteDuringCelebrationGoesStraightOn()
+        {
+            var g = new MimicGame();
+            g.Start(Simple, 1, 1f, 10f, 0);
+            ToListen(g);
+            foreach (int m in new[] { 60, 62, 64 }) g.Press(m);
+            Assert.AreEqual(MimicGame.State.Cleared, g.Current);
+            Assert.AreEqual(MimicGame.PressResult.Ignored, g.Press(60), "つぎの はじめの音で なければ まつ");
+            Assert.AreEqual(MimicGame.PressResult.Correct, g.Press(64), "つぎの まとまりの はじめの音（ミ）");
+            Assert.AreEqual(1, g.RoundIndex);
+            Assert.AreEqual(1, g.Progress);
+            Assert.AreEqual(MimicGame.State.Listen, g.Current);
+            g.Press(62);
+            Assert.AreEqual(MimicGame.PressResult.RoundComplete, g.Press(60));
+            Run(g, MimicGame.ClearedSeconds + 0.1f);
+            Assert.AreEqual(MimicGame.State.Finished, g.Current);
+            Assert.AreEqual(3, g.Stars, "まちがい なし");
+        }
+
+        [Test]
+        public void ThreeWrongNotesInARowShowTheHint()
+        {
+            var g = new MimicGame();
+            g.Start(Simple, 1, 1f, 10f, 0);
+            ToListen(g);
+            g.Press(71);
+            g.Press(71);
+            Assert.IsFalse(g.HintActive);
+            g.Press(71);
+            Assert.IsTrue(g.HintActive, "3 かい つづけて まちがえたら ヒント");
+            Assert.AreEqual(60, g.HintKey);
+            g.Press(60);
+            Assert.IsFalse(g.HintActive);
+            var off = new MimicGame();
+            off.Start(Simple, 1, 1f, 0f, 0);
+            ToListen(off);
+            for (int i = 0; i < 5; i++) off.Press(71);
+            Assert.IsFalse(off.HintActive, "ヒント なし の せってい");
+        }
+
+        [Test]
+        public void StarsCountMistakes()
+        {
+            var g = new MimicGame();
+            g.Start(Simple, 1, 1f, 10f, 0);
+            Assert.AreEqual(0, g.Stars, "おわるまでは 0");
+            foreach (var round in new[] { new[] { 60, 62, 64 }, new[] { 64, 62, 60 } })
+            {
+                ToListen(g);
+                for (int i = 0; i < 4; i++) g.Press(71);
+                foreach (int m in round) g.Press(m);
+                Run(g, MimicGame.ClearedSeconds + 0.1f);
+            }
+            Assert.AreEqual(MimicGame.State.Finished, g.Current);
+            Assert.AreEqual(8, g.Mistakes);
+            Assert.AreEqual(1, g.Stars);
+        }
+
+        [Test]
+        public void ChangingTheOctaveRestartsTheRoundHigher()
+        {
+            var g = new MimicGame();
+            var on = new List<int>();
+            g.DemoNoteOn += (m, d) => on.Add(m);
+            g.Start(Simple, 1, 1f, 10f, 0);
+            ToListen(g);
+            g.Press(60);
+            g.SetTranspose(12);
+            Assert.AreEqual(MimicGame.State.Intro, g.Current);
+            Assert.AreEqual(0, g.Progress);
+            on.Clear();
+            ToListen(g);
+            CollectionAssert.AreEqual(new[] { 72, 74, 76 }, on);
+            Assert.AreEqual(72, g.Expected);
         }
 
         [Test]

@@ -402,7 +402,7 @@
 
 .portrait .chip,
 .portrait .stamp-meter {
-    margin: 14px 0 0 0;
+    margin: 14px 8px 0 8px;
 }
 
 .free-row {
@@ -411,7 +411,9 @@
 }
 
 .portrait .free-row {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 /* まねっこ */
@@ -605,11 +607,13 @@
 
 .portrait .mimic-buttons {
     flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     margin: 12px 0 0 0;
 }
 
 .portrait .mimic-buttons .candy {
-    margin: 0 10px;
+    margin: 6px 8px;
 }
 
 .portrait .teacher {
@@ -902,10 +906,12 @@
 
 .perform-result__buttons {
     flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .perform-result__buttons .candy {
-    margin: 0 10px;
+    margin: 6px 8px;
     font-size: 34px;
     padding: 10px 26px 6px 18px;
 }
@@ -1821,4 +1827,447 @@
 
 .portrait .stamp-message .bubble {
     font-size: 30px;
+}
+
+/* ------------------------------------------------------------------ */
+/* 1.1 で ふえた もの */
+
+/* メニュー：ことばは タップできる・きょうの すすみ・あつめた スタンプ */
+.menu-today:hover {
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+.menu-meter {
+    flex-direction: row;
+    justify-content: center;
+    margin: -10px 0 18px 0;
+}
+
+.menu-meter .meter-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 13px;
+    margin: 0 5px;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-width: 3px;
+    border-color: rgb(236, 210, 196);
+}
+
+.menu-meter .meter-dot--on {
+    background-color: rgb(255, 150, 180);
+    border-color: rgb(226, 108, 146);
+}
+
+.short .menu-meter {
+    margin: -4px 0 8px 0;
+}
+
+.menu-stamp-count {
+    position: absolute;
+    left: 20px;
+    top: 14px;
+    font-size: 30px;
+    color: rgb(110, 70, 20);
+    background-color: rgba(255, 255, 255, 0.75);
+    border-radius: 20px;
+    padding: 2px 14px;
+}
+
+/* さいごに おした スタンプ：右上（「!」の しるしと アイコン・もじに かさならない ところ）。たて画面は せまいので 出さない */
+.menu-recent {
+    position: absolute;
+    right: 54px;
+    top: 12px;
+    width: 64px;
+    height: 64px;
+    -unity-background-scale-mode: scale-to-fit;
+    rotate: 12deg;
+}
+
+.portrait .menu-recent {
+    display: none;
+}
+
+.menu-button.menu-button--gold {
+    background-color: rgb(255, 200, 60);
+    border-color: rgb(255, 246, 200);
+    border-width: 6px;
+    border-bottom-width: 14px;
+    border-bottom-color: rgb(214, 150, 30);
+}
+
+/* せってい：セクションへ とぶ ボタン */
+.section-chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 4px 0 8px 0;
+}
+
+.section-chip {
+    margin: 6px 8px;
+    padding: 6px 22px 4px 10px;
+    font-size: 30px;
+    border-radius: 30px;
+    border-bottom-width: 7px;
+}
+
+.section-chip .candy__icon {
+    width: 46px;
+    height: 46px;
+    margin-right: 8px;
+}
+
+/* じゆうに ひく：ペダル・ろくおん・さいせい */
+.free-pedal {
+    margin-left: 14px;
+}
+
+.free-rec,
+.free-playback {
+    width: 96px;
+    height: 96px;
+    border-radius: 48px;
+    margin-left: 14px;
+}
+
+.free-rec .candy__icon,
+.free-playback .candy__icon {
+    width: 54px;
+    height: 54px;
+}
+
+.free-rec.free-rec--on {
+    background-color: rgb(255, 236, 238);
+    border-width: 5px;
+    border-bottom-width: 10px;
+    border-color: rgb(255, 90, 110);
+}
+
+.portrait .free-pedal,
+.portrait .free-rec,
+.portrait .free-playback {
+    margin: 14px 8px 0 8px;
+}
+
+.short .free-rec,
+.short .free-playback {
+    width: 84px;
+    height: 84px;
+}
+
+.short .chip {
+    padding: 8px 20px 6px 10px;
+    font-size: 34px;
+}
+
+.short .chip .candy__icon {
+    width: 56px;
+    height: 56px;
+}
+
+.short .stamp-meter .meter-dots {
+    display: none;
+}
+
+/* けんばんの まんなかの ド・パソコンの キー */
+.key-label--c4 {
+    border-width: 7px;
+    border-color: rgb(255, 214, 90);
+}
+
+.pc-letter {
+    position: absolute;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.85);
+    color: rgb(90, 70, 60);
+    -unity-text-align: middle-center;
+    padding: 0;
+    border-width: 2px;
+    border-color: rgba(120, 100, 90, 0.35);
+}
+
+.pc-letter--black {
+    background-color: rgba(60, 50, 70, 0.85);
+    color: rgb(255, 255, 255);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* まねっこ：ドット（おてほんで ならした音・つぎに ひく音）・ほし・チップ */
+.dot--demo {
+    opacity: 0.55;
+    border-color: rgb(255, 255, 255);
+}
+
+.dot--now {
+    border-color: rgb(255, 120, 160);
+    border-width: 6px;
+}
+
+.mimic-stars {
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.mimic-star {
+    width: 74px;
+    height: 74px;
+}
+
+.short .mimic-star {
+    width: 54px;
+    height: 54px;
+}
+
+.mimic-chips {
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.mimic-buttons .mimic-chips .candy {
+    margin: 0 4px;
+    padding: 8px 18px 4px 10px;
+    font-size: 30px;
+}
+
+.mimic-buttons .mimic-chips .candy__icon {
+    width: 46px;
+    height: 46px;
+}
+
+#mimic-inst {
+    padding: 8px 12px 4px 12px;
+}
+
+#mimic-inst .candy__icon {
+    margin-right: 0;
+}
+
+.portrait .mimic-buttons .mimic-chips {
+    margin: 6px 8px;
+}
+
+.song-card.song-card--last {
+    border-width: 5px;
+    border-bottom-width: 10px;
+    border-color: rgb(255, 160, 190);
+}
+
+/* スタンプまでの 小さな メーター（まねっこ・えんそう） */
+.mini-meter {
+    flex-direction: row;
+    align-items: center;
+    align-self: center;
+    margin-top: 8px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 22px;
+    padding: 4px 14px;
+}
+
+.mini-meter__icon {
+    width: 34px;
+    height: 34px;
+    margin-right: 6px;
+}
+
+.mini-meter__text {
+    font-size: 24px;
+    color: rgb(130, 100, 86);
+}
+
+.mini-meter__dots {
+    flex-direction: row;
+    margin-left: 8px;
+}
+
+.mini-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    margin: 0 2px;
+    background-color: rgb(236, 222, 210);
+}
+
+.mini-dot--on {
+    background-color: rgb(255, 150, 180);
+}
+
+.perform-info .mini-meter {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 2px 10px;
+}
+
+.perform-info .mini-meter__text {
+    display: none;
+}
+
+/* よこ長の スマホでは、おちてくる レーンを ひろく とるため 出さない */
+.short .perform-info .mini-meter {
+    display: none;
+}
+
+.short .mimic-center .mini-meter {
+    margin-top: 4px;
+}
+
+/* えんそう：さっきょくした 人・小節の 線・れんぞく・とめたとき・きろく */
+.perform-source {
+    font-size: 24px;
+    color: rgb(150, 120, 104);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.short .perform-source {
+    display: none;
+}
+
+.lane-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+.perform-combo {
+    position: absolute;
+    top: 74px;
+    right: 24px;
+    font-size: 44px;
+    color: rgb(255, 255, 255);
+    background-color: rgb(255, 176, 60);
+    border-radius: 30px;
+    border-width: 4px;
+    border-color: rgb(255, 255, 255);
+    padding: 4px 22px;
+    -unity-text-align: middle-center;
+}
+
+.short .perform-combo {
+    top: 56px;
+    font-size: 32px;
+    padding: 2px 16px;
+}
+
+.perform-paused {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 247, 236, 0.45);
+}
+
+.perform-resume {
+    padding: 18px 44px 14px 30px;
+    font-size: 48px;
+}
+
+.perform-resume .candy__icon {
+    width: 76px;
+    height: 76px;
+}
+
+.short .perform-resume {
+    padding: 10px 30px 8px 20px;
+    font-size: 36px;
+}
+
+.short .perform-resume .candy__icon {
+    width: 54px;
+    height: 54px;
+}
+
+/* 「あたらしい きろく！」は カードの 右上の シール（カードを たかく しない。よこ長の スマホでも ボタンが かくれない） */
+.perform-result__record {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    rotate: 6deg;
+    font-size: 30px;
+    color: rgb(255, 255, 255);
+    background-color: rgb(255, 120, 160);
+    border-radius: 24px;
+    border-width: 4px;
+    border-color: rgb(255, 255, 255);
+    padding: 2px 18px;
+}
+
+.short .perform-result__record {
+    font-size: 24px;
+    padding: 0 12px;
+    top: 6px;
+    right: 8px;
+}
+
+/* たて画面は たてに よゆうが あるので、見出しの 上に ならべる */
+.portrait .perform-result__record {
+    position: relative;
+    top: 0;
+    right: 0;
+    rotate: 0deg;
+    margin-bottom: 6px;
+}
+
+.perform-total {
+    width: 100%;
+    font-size: 32px;
+    color: rgb(110, 70, 20);
+    -unity-text-align: middle-center;
+    margin: 8px 0 0 0;
+}
+
+.short .perform-total {
+    font-size: 26px;
+}
+
+/* スタンプの くわしい画面：となりの スタンプへ */
+.detail-buttons {
+    flex-direction: row;
+    align-items: center;
+}
+
+.detail-buttons .round-button {
+    width: 100px;
+    height: 100px;
+    margin: 0 24px;
+}
+
+/* よこ長の スマホ：まねっこの ボタンは 2 れつに（たてに 4 だん ならぶと はみでる） */
+.short .mimic-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    width: 760px;
+}
+
+.short .mimic-buttons .candy {
+    margin: 4px 6px;
+}
+
+.short .mimic-buttons .mimic-chips {
+    margin: 4px 6px;
+}
+
+.short .mimic-buttons .mimic-chips .candy {
+    margin: 0 4px;
+}
+
+/* たて画面：「スタンプが もらえたよ」の ボタンは 2 だん目に（画面から はみでない） */
+.portrait .banner__card {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 94%;
+}
+
+.portrait .banner__text {
+    max-width: 560px;
 }

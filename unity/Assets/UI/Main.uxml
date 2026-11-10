@@ -6,8 +6,9 @@
         <ui:VisualElement name="menu" class="screen screen-bg">
             <ui:VisualElement name="menu-friends" class="fill" picking-mode="Ignore" />
             <ui:VisualElement name="menu-body" class="menu-body" picking-mode="Ignore">
-                <ui:VisualElement name="menu-logo" class="menu-logo" picking-mode="Ignore" />
-                <ui:Label name="menu-today" class="menu-today" text="" picking-mode="Ignore" />
+                <ui:VisualElement name="menu-logo" class="menu-logo" />
+                <ui:Label name="menu-today" class="menu-today" text="" />
+                <ui:VisualElement name="menu-meter" class="meter-dots menu-meter hidden" picking-mode="Ignore" />
                 <ui:VisualElement class="menu-buttons" picking-mode="Ignore">
                     <ui:Button name="btn-play" class="candy candy--pink menu-button">
                         <ui:VisualElement name="btn-play-icon" class="candy__icon" picking-mode="Ignore" />
@@ -16,6 +17,8 @@
                     <ui:Button name="btn-stamps" class="candy candy--yellow menu-button">
                         <ui:VisualElement name="btn-stamps-icon" class="candy__icon" picking-mode="Ignore" />
                         <ui:Label text="スタンプちょう" class="candy__label" picking-mode="Ignore" />
+                        <ui:Label name="menu-stamp-count" class="menu-stamp-count hidden" text="" picking-mode="Ignore" />
+                        <ui:VisualElement name="menu-recent" class="menu-recent hidden" picking-mode="Ignore" />
                         <ui:Label name="stamp-badge" text="!" class="badge hidden" picking-mode="Ignore" />
                     </ui:Button>
                     <ui:Button name="btn-settings" class="candy candy--blue menu-button">
@@ -46,12 +49,22 @@
             <ui:VisualElement name="stage" class="stage" picking-mode="Ignore">
                 <!-- じゆうに ひく -->
                 <ui:VisualElement name="free-panel" class="free-panel" picking-mode="Ignore">
-                    <ui:VisualElement name="free-mascot" class="mascot" picking-mode="Ignore" />
+                    <ui:VisualElement name="free-mascot" class="mascot" />
                     <ui:Label name="free-bubble" class="bubble" text="すきに ひいてね♪" picking-mode="Ignore" />
                     <ui:VisualElement class="free-row" picking-mode="Ignore">
                         <ui:Button name="inst-chip" class="candy candy--white chip">
                             <ui:VisualElement name="inst-chip-icon" class="candy__icon" picking-mode="Ignore" />
                             <ui:Label name="inst-chip-label" text="ピアノ" class="candy__label" picking-mode="Ignore" />
+                        </ui:Button>
+                        <ui:Button name="free-pedal" class="candy candy--white chip free-pedal">
+                            <ui:VisualElement name="free-pedal-icon" class="candy__icon" picking-mode="Ignore" />
+                            <ui:Label name="free-pedal-label" text="ペダル" class="candy__label" picking-mode="Ignore" />
+                        </ui:Button>
+                        <ui:Button name="free-rec" class="candy candy--white round-button free-rec">
+                            <ui:VisualElement name="free-rec-icon" class="candy__icon" picking-mode="Ignore" />
+                        </ui:Button>
+                        <ui:Button name="free-playback" class="candy candy--green round-button free-playback hidden">
+                            <ui:VisualElement name="free-playback-icon" class="candy__icon" picking-mode="Ignore" />
                         </ui:Button>
                         <ui:VisualElement name="stamp-meter" class="stamp-meter" picking-mode="Ignore">
                             <ui:VisualElement name="stamp-meter-icon" class="icon stamp-meter__icon" picking-mode="Ignore" />
@@ -68,21 +81,35 @@
                         <ui:ScrollView name="song-list" class="song-list" mode="Vertical" />
                     </ui:VisualElement>
                     <ui:VisualElement name="mimic-game" class="mimic-game hidden" picking-mode="Ignore">
-                        <ui:VisualElement name="teacher" class="teacher" picking-mode="Ignore" />
+                        <ui:VisualElement name="teacher" class="teacher" />
                         <ui:VisualElement class="mimic-center" picking-mode="Ignore">
                             <ui:Label name="mimic-title" class="mimic-title" text="" picking-mode="Ignore" />
                             <ui:Label name="mimic-bubble" class="bubble" text="" picking-mode="Ignore" />
                             <ui:VisualElement name="mimic-dots" class="dots" picking-mode="Ignore" />
+                            <ui:VisualElement name="mimic-meter" class="mini-meter" picking-mode="Ignore" />
                         </ui:VisualElement>
                         <ui:VisualElement name="mimic-buttons" class="mimic-buttons" picking-mode="Ignore">
                             <ui:Button name="mimic-replay" class="candy candy--yellow">
                                 <ui:VisualElement name="mimic-replay-icon" class="candy__icon" picking-mode="Ignore" />
                                 <ui:Label name="mimic-replay-label" text="もういちど きく" class="candy__label" picking-mode="Ignore" />
                             </ui:Button>
+                            <ui:Button name="mimic-next" class="candy candy--pink hidden">
+                                <ui:VisualElement name="mimic-next-icon" class="candy__icon" picking-mode="Ignore" />
+                                <ui:Label text="つぎの きょく" class="candy__label" picking-mode="Ignore" />
+                            </ui:Button>
                             <ui:Button name="mimic-change" class="candy candy--white">
                                 <ui:VisualElement name="mimic-change-icon" class="candy__icon" picking-mode="Ignore" />
                                 <ui:Label text="きょくを かえる" class="candy__label" picking-mode="Ignore" />
                             </ui:Button>
+                            <ui:VisualElement class="mimic-chips" picking-mode="Ignore">
+                                <ui:Button name="mimic-speed" class="candy candy--yellow chip">
+                                    <ui:VisualElement name="mimic-speed-icon" class="candy__icon" picking-mode="Ignore" />
+                                    <ui:Label name="mimic-speed-label" text="ふつう" class="candy__label" picking-mode="Ignore" />
+                                </ui:Button>
+                                <ui:Button name="mimic-inst" class="candy candy--white chip">
+                                    <ui:VisualElement name="mimic-inst-icon" class="candy__icon" picking-mode="Ignore" />
+                                </ui:Button>
+                            </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
@@ -99,9 +126,11 @@
                                 <ui:VisualElement name="perform-animal" class="perform-animal" picking-mode="Ignore" />
                                 <ui:VisualElement class="perform-info" picking-mode="Ignore">
                                     <ui:Label name="perform-title" class="perform-title" text="" picking-mode="Ignore" />
+                                    <ui:Label name="perform-source" class="perform-source" text="" picking-mode="Ignore" />
                                     <ui:VisualElement class="perform-progress" picking-mode="Ignore">
                                         <ui:VisualElement name="perform-progress-fill" class="perform-progress__fill" picking-mode="Ignore" />
                                     </ui:VisualElement>
+                                    <ui:VisualElement name="perform-meter" class="mini-meter" picking-mode="Ignore" />
                                 </ui:VisualElement>
                             </ui:VisualElement>
                             <ui:VisualElement class="perform-controls" picking-mode="Ignore">
@@ -120,18 +149,31 @@
                                     <ui:VisualElement name="perform-speed-icon" class="candy__icon" picking-mode="Ignore" />
                                     <ui:Label name="perform-speed-label" text="ふつう" class="candy__label" picking-mode="Ignore" />
                                 </ui:Button>
+                                <ui:Button name="perform-inst" class="candy candy--white round-button perform-button">
+                                    <ui:VisualElement name="perform-inst-icon" class="candy__icon" picking-mode="Ignore" />
+                                </ui:Button>
                                 <ui:Button name="perform-change" class="candy candy--white round-button perform-button">
                                     <ui:VisualElement name="perform-change-icon" class="candy__icon" picking-mode="Ignore" />
                                 </ui:Button>
                             </ui:VisualElement>
                         </ui:VisualElement>
                         <ui:VisualElement name="perform-lane" class="perform-lane" picking-mode="Ignore">
+                            <ui:VisualElement name="perform-lines" class="fill" picking-mode="Ignore" />
                             <ui:VisualElement name="perform-notes" class="fill" picking-mode="Ignore" />
-                            <ui:VisualElement class="perform-hitline" picking-mode="Ignore" />
+                            <ui:VisualElement name="perform-hitline" class="perform-hitline" picking-mode="Ignore" />
+                            <ui:VisualElement name="perform-bursts" class="fill" picking-mode="Ignore" />
+                            <ui:Label name="perform-combo" class="perform-combo hidden" text="" picking-mode="Ignore" />
                             <ui:Label name="perform-count" class="perform-count hidden" text="" picking-mode="Ignore" />
+                            <ui:VisualElement name="perform-paused" class="perform-paused hidden">
+                                <ui:Button name="perform-resume" class="candy candy--pink perform-resume">
+                                    <ui:VisualElement name="perform-resume-icon" class="candy__icon" picking-mode="Ignore" />
+                                    <ui:Label text="つづきから" class="candy__label" picking-mode="Ignore" />
+                                </ui:Button>
+                            </ui:VisualElement>
                             <ui:Label name="perform-bubble" class="bubble perform-bubble hidden" text="" picking-mode="Ignore" />
                             <ui:VisualElement name="perform-result" class="perform-result hidden" picking-mode="Ignore">
                                 <ui:VisualElement class="perform-result__card" picking-mode="Ignore">
+                                    <ui:Label name="perform-result-record" class="perform-result__record hidden" text="あたらしい きろく！" picking-mode="Ignore" />
                                     <ui:Label name="perform-result-text" class="perform-result__text" text="" picking-mode="Ignore" />
                                     <ui:VisualElement name="perform-result-stars" class="perform-result__stars" picking-mode="Ignore" />
                                     <ui:Label name="perform-result-detail" class="perform-result__detail" text="" picking-mode="Ignore" />
@@ -139,6 +181,14 @@
                                         <ui:Button name="perform-again" class="candy candy--yellow">
                                             <ui:VisualElement name="perform-again-icon" class="candy__icon" picking-mode="Ignore" />
                                             <ui:Label text="もういちど" class="candy__label" picking-mode="Ignore" />
+                                        </ui:Button>
+                                        <ui:Button name="perform-slow" class="candy candy--green hidden">
+                                            <ui:VisualElement name="perform-slow-icon" class="candy__icon" picking-mode="Ignore" />
+                                            <ui:Label text="ゆっくりで もういちど" class="candy__label" picking-mode="Ignore" />
+                                        </ui:Button>
+                                        <ui:Button name="perform-next" class="candy candy--pink">
+                                            <ui:VisualElement name="perform-next-icon" class="candy__icon" picking-mode="Ignore" />
+                                            <ui:Label text="つぎの きょく" class="candy__label" picking-mode="Ignore" />
                                         </ui:Button>
                                         <ui:Button name="perform-other" class="candy candy--white">
                                             <ui:VisualElement name="perform-other-icon" class="candy__icon" picking-mode="Ignore" />
@@ -215,9 +265,17 @@
                     <ui:VisualElement name="detail-image" class="detail-image" picking-mode="Ignore" />
                     <ui:Label name="detail-name" class="detail-name" text="" picking-mode="Ignore" />
                     <ui:Label name="detail-info" class="detail-info" text="" picking-mode="Ignore" />
-                    <ui:Button name="detail-close" class="candy candy--pink">
-                        <ui:Label text="とじる" class="candy__label" picking-mode="Ignore" />
-                    </ui:Button>
+                    <ui:VisualElement class="detail-buttons" picking-mode="Ignore">
+                        <ui:Button name="detail-prev" class="candy candy--white round-button">
+                            <ui:VisualElement name="detail-prev-icon" class="candy__icon" picking-mode="Ignore" />
+                        </ui:Button>
+                        <ui:Button name="detail-close" class="candy candy--pink">
+                            <ui:Label text="とじる" class="candy__label" picking-mode="Ignore" />
+                        </ui:Button>
+                        <ui:Button name="detail-next" class="candy candy--white round-button">
+                            <ui:VisualElement name="detail-next-icon" class="candy__icon" picking-mode="Ignore" />
+                        </ui:Button>
+                    </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>

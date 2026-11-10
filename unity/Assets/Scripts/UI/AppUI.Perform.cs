@@ -6,9 +6,9 @@ namespace Piamo
 {
     /// <summary>
     /// 「ピアノで あそぶ」の えんそうモード。
-    ///  - 曲えらび（なかまごとの 見出し・むずかしさ・もらった ほし）
-    ///  - きく／いっしょに／ひとつずつ、はやさ、はじめから、とめる
-    ///  - ひく音が 上から おちてきて、けんばんに とどくと その けんばんが ひかる
+    ///  - 曲えらび（なかまごとの 見出し・むずかしさ・もらった ほし・あつめた ほしの 合計）
+    ///  - きく／いっしょに／ひとつずつ、はやさ、はじめから、とめる（とめたら「つづきから」、3・2・1 で つづく）
+    ///  - ひく音が 上から おちてきて、けんばんに とどくと その けんばんが ひかる（小節の 線・あたりの きらきら・れんぞく）
     ///  - 曲が いまの けんばんに おさまらなければ、その曲の あいだだけ けんばんを ふやす（せっていは かえない）
     /// まねっこ とは べつの ゲーム（PerformGame）で、モードを かえると もう一方は 止める。
     /// </summary>
@@ -21,18 +21,26 @@ namespace Piamo
         public PerformSong PerformSong => _performSong;
         public bool PerformUserPaused => _performUserPaused;
 
+        /// <summary>ひとつずつ：この秒数 まっても おさなかったら、矢じるしで おしえる。</summary>
+        public const float StepHintSeconds = 4f;
+        /// <summary>この数 つづけて あたったら「れんぞく」を 出す。</summary>
+        public const int ComboShowFrom = 5;
+
         PerformSong _performSong;
         VisualElement _performPanel, _performPicker, _performGame, _performLane, _performNotes, _performResult, _performResultStars, _performProgress, _performAnimal, _performPlayIcon;
-        Label _performTitle, _performCount, _performBubble, _performResultText, _performResultDetail, _performSpeedLabel;
-        Button _tabPerform;
+        VisualElement _performLines, _performBursts, _performPaused, _performMeter;
+        Label _performTitle, _performSource, _performCount, _performBubble, _performResultText, _performResultDetail, _performSpeedLabel, _performCombo, _performRecord, _performTotal;
+        Button _tabPerform, _performSlow, _performNext;
         readonly Button[] _performModeTabs = new Button[3];
         ScrollView _performList;
-        bool _performUserPaused;
-        float _performBubbleTimer, _performCountPop;
-        int _laneFrom;
+        bool _performUserPaused, _stepHintShown;
+        float _performBubbleTimer, _performCountPop, _comboPop;
+        int _laneFrom, _comboShown;
         Dictionary<int, float> _guides = new Dictionary<int, float>();
         Dictionary<int, float> _guidesNext = new Dictionary<int, float>();
         readonly List<(Button card, PerformSong song, VisualElement stars)> _performCards = new List<(Button, PerformSong, VisualElement)>();
+        readonly List<VisualElement> _barLines = new List<VisualElement>();
+        const int BarLinePool = 12;
 
         class LaneNote
         {
@@ -59,6 +67,9 @@ namespace Piamo
             "ひかった けんばんを おしてね。まってるよ",
         };
 
+        /// <summary>テスト用：「れんぞく」の もじ（出ていなければ null）。</summary>
+        public string PerformComboText => _performCombo == null || _performCombo.ClassListContains("hidden") ? null : _performCombo.text;
+
         void BuildPerform()
         {
             _performPanel = _root.Q("perform-panel");
@@ -66,18 +77,27 @@ namespace Piamo
             _performGame = _root.Q("perform-game");
             _performLane = _root.Q("perform-lane");
             _performNotes = _root.Q("perform-notes");
+            _performLines = _root.Q("perform-lines");
+            _performBursts = _root.Q("perform-bursts");
+            _performPaused = _root.Q("perform-paused");
+            _performMeter = _root.Q("perform-meter");
             _performResult = _root.Q("perform-result");
             _performResultStars = _root.Q("perform-result-stars");
             _performProgress = _root.Q("perform-progress-fill");
             _performAnimal = _root.Q("perform-animal");
             _performPlayIcon = _root.Q("perform-play-icon");
             _performTitle = _root.Q<Label>("perform-title");
+            _performSource = _root.Q<Label>("perform-source");
             _performCount = _root.Q<Label>("perform-count");
+            _performCombo = _root.Q<Label>("perform-combo");
             _performBubble = _root.Q<Label>("perform-bubble");
             _performResultText = _root.Q<Label>("perform-result-text");
             _performResultDetail = _root.Q<Label>("perform-result-detail");
+            _performRecord = _root.Q<Label>("perform-result-record");
             _performSpeedLabel = _root.Q<Label>("perform-speed-label");
             _performList = _root.Q<ScrollView>("perform-list");
+            _performSlow = _root.Q<Button>("perform-slow");
+            _performNext = _root.Q<Button>("perform-next");
             _tabPerform = _root.Q<Button>("tab-perform");
             _performModeTabs[0] = _root.Q<Button>("perform-mode-listen");
             _performModeTabs[1] = _root.Q<Button>("perform-mode-along");
@@ -88,6 +108,9 @@ namespace Piamo
             SetIcon("perform-speed-icon", "speed");
             SetIcon("perform-again-icon", "again");
             SetIcon("perform-other-icon", "songs");
+            SetIcon("perform-slow-icon", "speed");
+            SetIcon("perform-next-icon", "next");
+            SetIcon("perform-resume-icon", "play");
 
             OnClick(_tabPerform, () => SetMode(PlayMode.Perform));
             for (int i = 0; i < _performModeTabs.Length; i++)
@@ -98,10 +121,15 @@ namespace Piamo
             OnClick(_root.Q<Button>("perform-play"), TogglePerformPause);
             OnClick(_root.Q<Button>("perform-restart"), RestartPerform);
             OnClick(_root.Q<Button>("perform-speed"), CyclePerformSpeed);
+            OnClick(_root.Q<Button>("perform-inst"), OpenInstrumentPopup);
             OnClick(_root.Q<Button>("perform-change"), StopPerform);
+            OnClick(_root.Q<Button>("perform-resume"), TogglePerformPause);
             OnClick(_root.Q<Button>("perform-again"), RestartPerform);
+            OnClick(_performSlow, RestartPerformSlowly);
+            OnClick(_performNext, StartNextPerformSong);
             OnClick(_root.Q<Button>("perform-other"), StopPerform);
 
+            for (int i = 0; i < BarLinePool; i++) _barLines.Add(UIParts.El("lane-line hidden", _performLines));
             for (int i = 0; i < LanePool; i++)
             {
                 var e = UIParts.El("lane-note hidden", _performNotes);
@@ -109,6 +137,7 @@ namespace Piamo
             }
             for (int i = 0; i < 6; i++) _judgeTexts.Add(new JudgeText { l = UIParts.Text("", "judge hidden", _performLane) });
             for (int i = 0; i < 3; i++) UIParts.SetIcon(UIParts.El("result-star", _performResultStars), Icon("star"));
+            BuildMiniMeter(_performMeter);
 
             Perform = new PerformGame();
             Perform.CountTick += n =>
@@ -116,7 +145,8 @@ namespace Piamo
                 _performCount.text = n.ToString();
                 _performCount.RemoveFromClassList("hidden");
                 _performCountPop = 0.25f;
-                audioOut?.PlaySfx("tap", 0.8f);
+                // カッ・カッ・カッ・ポン（さいごは たかい音）
+                audioOut?.PlaySfx(n == 1 ? "count_go" : "count", 0.8f);
             };
             Perform.MelodyOn += OnPerformMelodyOn;
             Perform.MelodyOff += OnPerformMelodyOff;
@@ -136,6 +166,8 @@ namespace Piamo
         void BuildPerformList()
         {
             var c = _performList.contentContainer;
+            _performTotal = UIParts.Text("", "perform-total hidden", c);
+            _performTotal.name = "perform-total";
             int cat = -1;
             foreach (var song in PerformSongs.All)
             {
@@ -158,12 +190,21 @@ namespace Piamo
 
         void RefreshPerformCards()
         {
+            string last = SaveSystem.Data.lastPerformSong;
+            Button lastCard = null;
             foreach (var (card, song, stars) in _performCards)
             {
                 int n = SaveSystem.Data.StarsFor(song.id);
                 stars.EnableInClassList("hidden", n <= 0);
                 for (int i = 0; i < stars.childCount; i++) stars[i].style.display = i < n ? DisplayStyle.Flex : DisplayStyle.None;
+                bool isLast = song.id == last;
+                card.EnableInClassList("song-card--last", isLast);
+                if (isLast) lastCard = card;
             }
+            int total = SaveSystem.Data.TotalPerformStars;
+            _performTotal.EnableInClassList("hidden", total <= 0);
+            _performTotal.text = $"あつめた ほし {total}こ（ぜんぶで {PerformSongs.All.Count * 3}こ）";
+            ScrollIntoView(_performList, lastCard);
         }
 
         void ShowPerformPicker()
@@ -207,6 +248,7 @@ namespace Piamo
             Perform.Stop();
             ClearPerformGuides();
             play?.ReleaseAll();
+            play?.view.SetHint(-1);
             _performSong = song;
             ApplyPlayLayout();
             var s = SaveSystem.Settings;
@@ -214,10 +256,17 @@ namespace Piamo
             _performGame.RemoveFromClassList("hidden");
             _performResult.AddToClassList("hidden");
             _performCount.AddToClassList("hidden");
+            _performCombo.AddToClassList("hidden");
+            _performPaused.AddToClassList("hidden");
             _performTitle.text = song.title;
+            _performSource.text = song.source;
             UIParts.SetIcon(_performAnimal, Character(song.animal));
             _performUserPaused = false;
+            _stepHintShown = false;
+            _comboShown = 0;
             _laneFrom = 0;
+            SaveSystem.Data.lastPerformSong = song.id;
+            Perform.WindowScale = s.PerformWindowScale;
             Perform.Start(song, (PerformGame.Mode)s.performMode, s.PerformTempo, s.performAccomp, s.performMelody);
             SetPerformBubble(PerformIntro[s.performMode]);
             RefreshPerformControls();
@@ -228,11 +277,27 @@ namespace Piamo
             if (_performSong != null) StartPerform(_performSong);
         }
 
+        /// <summary>「ゆっくりで もういちど」：はやさを ゆっくりに して はじめから。</summary>
+        void RestartPerformSlowly()
+        {
+            SaveSystem.Settings.performSpeed = 0;
+            SaveSystem.ApplySettings();
+            RestartPerform();
+        }
+
+        void StartNextPerformSong()
+        {
+            if (_performSong == null) return;
+            int i = PerformSongs.All.IndexOf(_performSong);
+            StartPerform(PerformSongs.All[(i + 1) % PerformSongs.All.Count]);
+        }
+
         /// <summary>曲えらびに もどる（けんばんも せっていの けんばんに もどす）。</summary>
         void StopPerform()
         {
             Perform?.Stop();
             play?.ReleaseAll();
+            play?.view.SetHint(-1);
             audioOut?.AllOff(false);
             ClearPerformGuides();
             bool had = _performSong != null;
@@ -240,6 +305,7 @@ namespace Piamo
             _performUserPaused = false;
             if (had) ApplyPlayLayout();
             foreach (var n in _lane) n.e.AddToClassList("hidden");
+            foreach (var l in _barLines) l.AddToClassList("hidden");
             foreach (var j in _judgeTexts)
             {
                 j.life = 0f;
@@ -247,6 +313,8 @@ namespace Piamo
             }
             _performCount.AddToClassList("hidden");
             _performBubble.AddToClassList("hidden");
+            _performCombo.AddToClassList("hidden");
+            _performPaused.AddToClassList("hidden");
             ShowPerformPicker();
             RefreshPerformControls();
         }
@@ -278,7 +346,7 @@ namespace Piamo
             RefreshPerformControls();
         }
 
-        /// <summary>せっていが かわったとき（はやさ・おてほん・ばんそう は、ひいている とちゅうでも かわる）。</summary>
+        /// <summary>せっていが かわったとき（はやさ・おてほん・ばんそう・あたりの はば は、ひいている とちゅうでも かわる）。</summary>
         void RefreshPerformAfterSettings()
         {
             var s = SaveSystem.Settings;
@@ -287,6 +355,7 @@ namespace Piamo
                 Perform.SetTempo(s.PerformTempo);
                 Perform.GuideSound = s.performMelody;
                 Perform.SetAccompaniment(s.performAccomp);
+                Perform.WindowScale = s.PerformWindowScale;
             }
             RefreshPerformControls();
         }
@@ -297,9 +366,12 @@ namespace Piamo
             var s = SaveSystem.Settings;
             _performSpeedLabel.text = PerformSpeedLabels[s.performSpeed];
             for (int i = 0; i < _performModeTabs.Length; i++) _performModeTabs[i].EnableInClassList("tab--on", i == s.performMode);
-            bool running = Perform != null && _performSong != null && !_performUserPaused
+            bool active = Perform != null && _performSong != null
                 && (Perform.Current == PerformGame.State.CountIn || Perform.Current == PerformGame.State.Playing);
+            bool running = active && !_performUserPaused;
             UIParts.SetIcon(_performPlayIcon, Icon(running ? "pause" : "play"));
+            // とめているときは「つづきから」（大きな ボタン）
+            _performPaused.EnableInClassList("hidden", !(active && _performUserPaused));
         }
 
         void SetPerformBubble(string text, float seconds = 2.6f)
@@ -311,6 +383,18 @@ namespace Piamo
 
         // ------------------------------------------------------------------
         // 音と けんばん
+
+        void PerformNotePlayed(int midi)
+        {
+            var pr = Perform.Press(midi);
+            if (pr == PerformGame.PressResult.Wrong && Perform.CurrentMode == PerformGame.Mode.Step)
+            {
+                // まちがえた けんばんは はいいろに（せめない いろ）
+                play.view.SetPressed(midi, true, WrongGlow);
+                int next = Perform.NextIndex < Perform.Song.notes.Count ? Perform.Song.notes[Perform.NextIndex].midi : -1;
+                SetPerformBubble(HintText(next));
+            }
+        }
 
         void OnPerformMelodyOn(int index, float seconds)
         {
@@ -327,19 +411,31 @@ namespace Piamo
 
         void OnPerformJudged(int index, PerformGame.Grade grade)
         {
-            if (Perform.CurrentMode != PerformGame.Mode.Along) return;
-            if (grade == PerformGame.Grade.Perfect || grade == PerformGame.Grade.Good)
-                ShowJudge(Perform.Song.notes[index].midi, grade == PerformGame.Grade.Perfect);
+            bool hit = grade == PerformGame.Grade.Perfect || grade == PerformGame.Grade.Good;
+            if (!hit) return;
+            int midi = Perform.Song.notes[index].midi;
+            // いっしょに・きく では「ぴったり／いいね」。ひとつずつ は きらきら だけ
+            if (Perform.CurrentMode != PerformGame.Mode.Step) ShowJudge(midi, grade == PerformGame.Grade.Perfect);
+            if (!SaveSystem.Settings.reduceMotion && play != null)
+            {
+                var lp = ScreenToLocal(_performBursts, play.WorldToScreen(play.view.TopPoint(midi)));
+                Burst(_performBursts, new Vector2(lp.x, _performBursts.layout.height - 6f), 7, 0.45f);
+            }
         }
 
         void OnPerformFinished()
         {
             ClearPerformGuides();
+            play?.view.SetHint(-1);
             var g = Perform;
             _performResult.RemoveFromClassList("hidden");
             _performBubble.AddToClassList("hidden");
+            _performCombo.AddToClassList("hidden");
+            _performPaused.AddToClassList("hidden");
+            _performRecord.AddToClassList("hidden");
             int stars = g.Stars;
-            if (g.CurrentMode == PerformGame.Mode.Listen)
+            bool listen = g.CurrentMode == PerformGame.Mode.Listen;
+            if (listen)
             {
                 audioOut?.PlaySfx("success", 0.9f);
                 _performResultText.text = "おしまい♪";
@@ -350,13 +446,24 @@ namespace Piamo
             {
                 audioOut?.PlaySfx(stars >= 3 ? "clear" : "success", 1f);
                 _performResultText.text = stars >= 3 ? "すごい！ さいごまで ひけたね！" : stars == 2 ? "じょうず！ さいごまで ひけたね！" : "さいごまで ひけたね！";
+                string combo = g.BestCombo >= ComboShowFrom ? $"・さいこう {g.BestCombo} れんぞく" : "";
                 _performResultDetail.text = g.CurrentMode == PerformGame.Mode.Along
-                    ? $"ぴったり {g.Perfect}・いいね {g.Good}（ぜんぶで {g.Total}）"
+                    ? $"ぴったり {g.Perfect}・いいね {g.Good}（ぜんぶで {g.Total}）{combo}"
                     : "ひとつずつ ぜんぶ ひけたよ";
                 _performResultStars.RemoveFromClassList("hidden");
                 for (int i = 0; i < _performResultStars.childCount; i++) _performResultStars[i].EnableInClassList("result-star--off", i >= stars);
-                if (SaveSystem.Data.RecordStars(_performSong.id, stars)) SaveSystem.Save();
+                int before = SaveSystem.Data.StarsFor(_performSong.id);
+                if (SaveSystem.Data.RecordStars(_performSong.id, stars))
+                {
+                    SaveSystem.Save();
+                    _performRecord.text = before > 0 ? "あたらしい きろく！" : "はじめての ほし！";
+                    _performRecord.RemoveFromClassList("hidden");
+                }
+                if (stars >= 3) PlayConfetti();
+                WebBridge.Vibrate(40);
             }
+            // うまく いかなかったら「ゆっくりで もういちど」
+            _performSlow.EnableInClassList("hidden", listen || stars >= 2 || SaveSystem.Settings.performSpeed == 0);
             RefreshPerformControls();
         }
 
@@ -452,6 +559,50 @@ namespace Piamo
             _performProgress.style.width = Length.Percent(Perform.Progress * 100f);
             UpdatePerformGuides();
             FollowPerform();
+            UpdateStepHint();
+            UpdateCombo(dt);
+        }
+
+        /// <summary>ひとつずつ：しばらく おさなかったら、矢じるしと ことばで おしえる。</summary>
+        void UpdateStepHint()
+        {
+            var g = Perform;
+            bool step = g.CurrentMode == PerformGame.Mode.Step && g.Current == PerformGame.State.Playing && !g.Paused && g.NextIndex < g.Total;
+            if (step && g.StepWait >= StepHintSeconds)
+            {
+                int m = g.Song.notes[g.NextIndex].midi;
+                play.view.SetHint(m);
+                if (!_stepHintShown)
+                {
+                    _stepHintShown = true;
+                    audioOut?.PlaySfx("hint", 0.6f);
+                    SetPerformBubble(HintText(m), 3f);
+                }
+            }
+            else
+            {
+                if (play.view.HintKey >= 0) play.view.SetHint(-1);
+                if (g.StepWait <= 0f) _stepHintShown = false;
+            }
+        }
+
+        void UpdateCombo(float dt)
+        {
+            int c = Perform.CurrentMode == PerformGame.Mode.Listen ? 0 : Perform.Combo;
+            bool show = c >= ComboShowFrom && Perform.Current != PerformGame.State.Finished;
+            if (show != !_performCombo.ClassListContains("hidden")) _performCombo.EnableInClassList("hidden", !show);
+            if (show && c != _comboShown)
+            {
+                _performCombo.text = $"{c} れんぞく！";
+                _comboPop = 0.2f;
+            }
+            _comboShown = show ? c : 0;
+            if (_comboPop > 0f)
+            {
+                _comboPop -= dt;
+                float s = 1f + 0.3f * Mathf.Clamp01(_comboPop / 0.2f);
+                _performCombo.style.scale = new Scale(new Vector2(s, s));
+            }
         }
 
         /// <summary>おちてくる音（鍵盤の位置に あわせるので、カメラが うごいたあと LateUpdate で）。</summary>
@@ -467,6 +618,7 @@ namespace Piamo
             float keyUnits = play.Framing.keyPx / PanelScale;
             var notes = g.Song.notes;
             var labels = SaveSystem.Settings.labels;
+            bool flats = g.Song.flats;
             if (_laneFrom > notes.Count) _laneFrom = 0;
             while (_laneFrom < notes.Count && notes[_laneFrom].Off < beat - 0.5f) _laneFrom++;
             int used = 0;
@@ -494,12 +646,28 @@ namespace Piamo
                 ln.e.EnableInClassList("lane-note--black", black);
                 ln.e.EnableInClassList("lane-note--hit", grade == PerformGame.Grade.Perfect || grade == PerformGame.Grade.Good);
                 ln.e.EnableInClassList("lane-note--miss", grade == PerformGame.Grade.Miss);
-                ln.label.text = height > 34f ? NoteUtil.Name(n.midi, labels) : "";
+                // ♭の 曲（ハッピーバースデー など）では、くろい けんばんを ♭ で よぶ
+                ln.label.text = height > 34f ? NoteUtil.Name(n.midi, labels, flats) : "";
                 ln.label.style.fontSize = Mathf.Clamp(nw * 0.4f, 18f, 34f);
                 if (ln.e.ClassListContains("hidden")) ln.e.RemoveFromClassList("hidden");
             }
             for (int i = used; i < _lane.Count; i++)
                 if (!_lane[i].e.ClassListContains("hidden")) _lane[i].e.AddToClassList("hidden");
+
+            // 小節の 線（どこで ひと区切りか、見て わかるように）
+            int lines = 0;
+            foreach (float b in g.Song.barStarts)
+            {
+                if (lines >= _barLines.Count) break;
+                float d = b - beat;
+                if (d < 0f) continue;
+                if (d > look) break;
+                var l = _barLines[lines++];
+                l.style.top = h - d * ppb - 1.5f;
+                if (l.ClassListContains("hidden")) l.RemoveFromClassList("hidden");
+            }
+            for (int i = lines; i < _barLines.Count; i++)
+                if (!_barLines[i].ClassListContains("hidden")) _barLines[i].AddToClassList("hidden");
         }
 
         /// <summary>見えている おちてくる音の数（テスト用）。</summary>
@@ -509,6 +677,17 @@ namespace Piamo
             {
                 int n = 0;
                 foreach (var l in _lane) if (!l.e.ClassListContains("hidden")) n++;
+                return n;
+            }
+        }
+
+        /// <summary>見えている 小節の 線の数（テスト用）。</summary>
+        public int BarLinesVisible
+        {
+            get
+            {
+                int n = 0;
+                foreach (var l in _barLines) if (!l.ClassListContains("hidden")) n++;
                 return n;
             }
         }

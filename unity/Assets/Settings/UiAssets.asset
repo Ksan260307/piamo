@@ -50,18 +50,24 @@ MonoBehaviour:
     texture: {fileID: 2800000, guid: 3373aedbae7203348b1293c690e0a463, type: 3}
   - name: minus
     texture: {fileID: 2800000, guid: c8ca9ca4907489e419eaa15a08c44c28, type: 3}
+  - name: next
+    texture: {fileID: 2800000, guid: 8318f5d44ec594340a3549330fdc5a1b, type: 3}
   - name: note1
     texture: {fileID: 2800000, guid: 3d2c86bf48e215149ab558904456d4a4, type: 3}
   - name: note2
     texture: {fileID: 2800000, guid: 10400a52641de8d41a22b1d3ff78b273, type: 3}
   - name: pause
     texture: {fileID: 2800000, guid: 6c9c1ebc55e4df24a8e099b59c569706, type: 3}
+  - name: pedal
+    texture: {fileID: 2800000, guid: 6adcb4dccc2d57547b71fecdd37d26a1, type: 3}
   - name: piano
     texture: {fileID: 2800000, guid: c45ea7ed8aad7eb42aca44a05b63d8cd, type: 3}
   - name: play
     texture: {fileID: 2800000, guid: c168edca07163184a89ba2b5fb11140f, type: 3}
   - name: plus
     texture: {fileID: 2800000, guid: eb5c8af8576c0bd498fd7f77e2c5886f, type: 3}
+  - name: rec
+    texture: {fileID: 2800000, guid: a104e5e8c0be7d646b4944e54a6f18da, type: 3}
   - name: right
     texture: {fileID: 2800000, guid: 1d86252d6767dd9449da321ac4d29077, type: 3}
   - name: sec_keys
@@ -92,6 +98,8 @@ MonoBehaviour:
     texture: {fileID: 2800000, guid: ed612a78fb4456243ba2d6a44a87f15c, type: 3}
   - name: star
     texture: {fileID: 2800000, guid: a26bb3ff6d0394d4cb7686bfd4a9c4e6, type: 3}
+  - name: stop
+    texture: {fileID: 2800000, guid: b6ef273d05018df4c9e2206672ece1ef, type: 3}
   - name: volume_high
     texture: {fileID: 2800000, guid: f7b27707c1700ff44829c0a511ca3805, type: 3}
   - name: volume_low

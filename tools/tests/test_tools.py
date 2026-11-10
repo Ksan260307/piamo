@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -33,6 +34,7 @@ audio = load("make_audio")
 stamps = load("make_stamps")
 check = load("check_build")
 fonts = load("make_fonts")
+songs = load("check_songs")
 
 
 def peak_freq(x, sr):
@@ -118,7 +120,7 @@ class AudioTests(unittest.TestCase):
                 self.assertEqual(w.getnchannels(), 1)
 
     def test_sfx_files(self):
-        for n in ("tap", "back", "open", "stamp", "stamp_big", "success", "clear", "oops", "hint", "earn", "page", "listen"):
+        for n in ("tap", "back", "open", "stamp", "stamp_big", "success", "clear", "oops", "hint", "earn", "page", "listen", "count", "count_go"):
             self.assertTrue(os.path.exists(os.path.join(ROOT, "unity", "Assets", "Audio", "Sfx", n + ".wav")), n)
 
 
@@ -204,6 +206,104 @@ class IconTests(unittest.TestCase):
                 self.assertEqual(im.size, (128, 128))
         for n in ("icon.png", "favicon.png", "logo.png"):
             self.assertTrue(os.path.exists(os.path.join(ROOT, "unity", "Assets", "WebGLTemplates", "Piamo", n)), n)
+
+
+class SongDataTests(unittest.TestCase):
+    """まねっこ・えんそうの 曲の データ（check_songs.py）。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.perform = songs.perform_songs()
+        cls.mimic = songs.mimic_songs()
+
+    def test_thirty_perform_songs_all_clean(self):
+        self.assertEqual(len(self.perform), 30)
+        bad = {s["title"]: songs.check_perform(s) for s in self.perform if songs.check_perform(s)}
+        self.assertEqual(bad, {})
+
+    def test_mimic_songs_are_one_octave_white_keys(self):
+        self.assertGreaterEqual(len(self.mimic), 20)
+        bad = {s["title"]: songs.check_mimic(s) for s in self.mimic if songs.check_mimic(s)}
+        self.assertEqual(bad, {})
+
+    def test_ids_and_titles_are_unique(self):
+        for items in (self.perform, self.mimic):
+            for key in ("id", "title"):
+                values = [s[key] for s in items]
+                self.assertEqual(len(values), len(set(values)), key)
+
+    def test_birthday_is_in_a_flat_key(self):
+        flats = {s["id"] for s in self.perform if s["flats"]}
+        self.assertIn("birthday", flats)
+
+    def test_catches_a_short_bar(self):
+        song = {"title": "x", "meter": "4/4", "style": "Pop", "melody": "C4 D4 E4 F4 | G4 A4 | C5:4", "chords": "C | C | C"}
+        problems = songs.check_perform(song)
+        self.assertTrue(any("2 小節め" in p for p in problems), problems)
+
+    def test_catches_a_note_against_the_chord(self):
+        song = {"title": "x", "meter": "4/4", "style": "Pop", "melody": "D4:4 | C4:4", "chords": "C | C"}
+        problems = songs.check_perform(song)
+        self.assertTrue(any("あわない" in p for p in problems), problems)
+
+    def test_catches_a_black_key_in_mimic(self):
+        self.assertTrue(songs.check_mimic({"notes": "C4 F#4 G4"}))
+        self.assertFalse(songs.check_mimic({"notes": "C4 E4 G4 | C5"}))
+
+    def test_main_passes(self):
+        with redirect_stdout(io.StringIO()) as out:
+            try:
+                songs.main()
+            except SystemExit as e:
+                self.assertIn(e.code, (0, None), out.getvalue())
+
+
+class UiReferenceTests(unittest.TestCase):
+    """C# の 画面の コードが つかう 名前（UXML の 要素・アイコン・こうかおん）が ほんとうに あるか。"""
+
+    UI = os.path.join(ROOT, "unity", "Assets", "Scripts", "UI")
+
+    @classmethod
+    def setUpClass(cls):
+        cls.code = ""
+        for name in sorted(os.listdir(cls.UI)):
+            if name.endswith(".cs"):
+                with open(os.path.join(cls.UI, name), encoding="utf-8") as f:
+                    cls.code += f.read()
+        with open(os.path.join(ROOT, "unity", "Assets", "UI", "Main.uxml"), encoding="utf-8") as f:
+            cls.uxml_names = set(re.findall(r'name="([^"]+)"', f.read()))
+        cls.icons = {os.path.splitext(n)[0] for n in os.listdir(os.path.join(ROOT, "unity", "Assets", "UI", "Icons")) if n.endswith(".png")}
+        cls.sfx = {os.path.splitext(n)[0] for n in os.listdir(os.path.join(ROOT, "unity", "Assets", "Audio", "Sfx")) if n.endswith(".wav")}
+
+    def test_queried_elements_exist_in_uxml(self):
+        names = set(re.findall(r'_root\.Q(?:<\w+>)?\("([^"]+)"\)', self.code))
+        names |= set(re.findall(r'\bSetIcon\("([^"]+)",', self.code))
+        self.assertGreater(len(names), 60)
+        missing = sorted(n for n in names if n not in self.uxml_names)
+        self.assertEqual(missing, [], "UXML に ない 要素")
+
+    def test_icons_used_in_code_exist(self):
+        def literals(arg):
+            # "inst_" + id のような つなぎの 文字は のぞく
+            return {m.group(1) for m in re.finditer(r'(?<!\+ )"([^"]+)"(?!\s*\+)', arg)}
+
+        used = set()
+        for arg in re.findall(r'\bIcon\(([^;{}]*?)\)', self.code):
+            used |= literals(arg)
+        for arg in re.findall(r'\bSetIcon\("[^"]+", ([^;]*?)\);', self.code):
+            used |= literals(arg)
+        used |= set(re.findall(r'\bSection\(c, "[^"]+", "([^"]+)"', self.code))
+        self.assertIn("rec", used)
+        missing = sorted(n for n in used if n not in self.icons)
+        self.assertEqual(missing, [], "アイコンの 絵が ない")
+
+    def test_sounds_used_in_code_exist(self):
+        used = set()
+        for arg in re.findall(r'PlaySfx\(([^,)]*)', self.code):
+            used |= set(re.findall(r'"([^"]+)"', arg))
+        self.assertIn("count_go", used)
+        missing = sorted(n for n in used if n not in self.sfx)
+        self.assertEqual(missing, [], "こうかおんの ファイルが ない")
 
 
 class CheckBuildTests(unittest.TestCase):

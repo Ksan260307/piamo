@@ -271,6 +271,35 @@ def d_speed(cv):
     base.draw(cv, OUT, W * 0.8)
 
 
+def d_rec(cv):
+    g = Group()
+    g.ellipse(50, 50, 30, 30, hexc("#ff5a6e"))
+    g.draw(cv, OUT, W)
+    h = Group()
+    h.ellipse(41, 40, 8, 6, hexc("#ff9aa6"), -0.6)
+    h.draw(cv)
+
+
+def d_stop(cv):
+    g_draw(cv, [(rounded_rect_pts(24, 24, 76, 76, 10), hexc("#ff5a6e"))])
+
+
+def d_next(cv):
+    g_draw(cv, [(round_poly([(22, 18), (62, 50), (22, 82)], 0.2, 8), WHITE),
+                (rounded_rect_pts(64, 18, 80, 82, 7), WHITE)])
+
+
+def d_pedal(cv):
+    # ピアノの ペダル（ななめの 板と 台）
+    g = Group()
+    g.add(rounded_rect_pts(16, 70, 84, 88, 6), hexc("#8a7a6e"))
+    g.add(round_poly([(30, 30), (78, 22), (82, 60), (34, 68)], 0.2, 5), hexc("#ffd45e"))
+    g.draw(cv, OUT, W)
+    h = Group()
+    h.add(rounded_rect_pts(40, 34, 70, 40, 3), hexc("#fff0b8"))
+    h.draw(cv)
+
+
 def d_sec_perform(cv):
     piano_shape(cv, 10, 52, 90, 92, PURPLE)
     bars = Group()
@@ -396,6 +425,7 @@ ICONS = {
     "inst_marimba": d_inst_marimba, "inst_organ": d_inst_organ, "inst_flute": d_inst_flute, "inst_harp": d_inst_harp,
     "inst_cat": d_inst_animal("cat", "happy"), "inst_dog": d_inst_animal("dog", "happy"),
     "play": d_play, "pause": d_pause, "again": d_again, "speed": d_speed, "sec_perform": d_sec_perform,
+    "rec": d_rec, "stop": d_stop, "next": d_next, "pedal": d_pedal,
 }
 
 

@@ -57,6 +57,14 @@ namespace Piamo.Tests
                 yield return cap.Shot(dir, size.name + "_2_play");
                 AppHarness.Play.ReleaseAll();
 
+                // じゆうに ひく：ろくおん した あと（▶ が 出る）
+                AppHarness.Click("free-rec");
+                yield return AppHarness.Frames(2);
+                foreach (int m in new[] { 60, 64, 67 }) yield return AppHarness.Tap(m);
+                AppHarness.Click("free-rec");
+                yield return AppHarness.Frames(3);
+                yield return cap.Shot(dir, size.name + "_2b_free_rec");
+
                 // まねっこ（ヒントが出ているところ）
                 AppHarness.Click("tab-mimic");
                 yield return AppHarness.Frames(3);
@@ -72,6 +80,21 @@ namespace Piamo.Tests
                 yield return AppHarness.Seconds(0.2f);
                 yield return cap.Shot(dir, size.name + "_4_mimic");
                 AppUI.MimicTimeScale = 1f;
+
+                // まねっこ：さいごまで ひけて ほしが 出たところ（おてほんを とばして ひく）
+                AppHarness.UI.StartSong(Songs.Find("chord"));
+                float limit = 0f;
+                while (AppHarness.UI.Mimic.Current != MimicGame.State.Finished && limit < 40f)
+                {
+                    var mg = AppHarness.UI.Mimic;
+                    int note = mg.Current == MimicGame.State.Listen ? mg.Expected
+                        : mg.Current == MimicGame.State.Intro || mg.Current == MimicGame.State.Demo ? mg.RoundNote(0) : -1;
+                    if (note >= 0) yield return AppHarness.Tap(note);
+                    else yield return null;
+                    limit += Time.unscaledDeltaTime;
+                }
+                yield return AppHarness.Seconds(0.3f);
+                yield return cap.Shot(dir, size.name + "_4a_mimic_done");
 
                 // えんそう（曲えらび・いっしょに ひいている ところ・おわり）
                 AppHarness.Click("tab-perform");
@@ -90,12 +113,22 @@ namespace Piamo.Tests
                 yield return AppHarness.Frames(3);
                 yield return cap.Shot(dir, size.name + "_4c_perform_hit");
                 AppHarness.Play.KeyUp(now, 6);
+                // とめたところ（つづきから）
+                AppUI.PerformTimeScale = 1f;
+                AppHarness.Click("perform-play");
+                yield return AppHarness.Frames(3);
+                yield return cap.Shot(dir, size.name + "_4c_perform_paused");
+                AppHarness.Click("perform-resume");
+                yield return AppHarness.Frames(2);
                 AppUI.PerformTimeScale = 40f;
                 yield return AppHarness.WaitUntil(() => g.Current == PerformGame.State.Finished, 20f, "えんそうの おわり");
                 AppUI.PerformTimeScale = 1f;
                 yield return AppHarness.Frames(3);
                 yield return cap.Shot(dir, size.name + "_4d_perform_result");
                 AppHarness.Click("perform-other");
+                yield return AppHarness.Frames(2);
+                // せっていは じゆうに ひく から ひらく（いちばん上の とぶ ボタンが 見える）
+                AppHarness.Click("tab-free");
                 yield return AppHarness.Frames(2);
 
                 // せってい（ピアノの とちゅうから）
@@ -119,6 +152,11 @@ namespace Piamo.Tests
                 AppHarness.UI.TapSlot(10);
                 yield return AppHarness.Seconds(0.6f);
                 yield return cap.Shot(dir, size.name + "_8_detail");
+                AppHarness.Click("detail-close");
+                yield return AppHarness.Frames(2);
+                AppHarness.Click("stamps-back");
+                yield return AppHarness.Seconds(0.5f);
+                yield return cap.Shot(dir, size.name + "_9_menu_after");
 
                 cap.Dispose();
                 AppHarness.TearDown();

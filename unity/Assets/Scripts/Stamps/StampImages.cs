@@ -10,6 +10,8 @@ namespace Piamo
     public class StampImages : MonoBehaviour
     {
         public const int CacheSize = 90;
+        /// <summary>読みこみに しっぱいしたとき、もう一度 ためす回数。</summary>
+        public const int Retries = 2;
         readonly Dictionary<int, Texture2D> _cache = new Dictionary<int, Texture2D>();
         readonly LinkedList<int> _order = new LinkedList<int>();
         readonly Dictionary<int, List<Action<Texture2D>>> _waiting = new Dictionary<int, List<Action<Texture2D>>>();
@@ -40,6 +42,27 @@ namespace Piamo
         IEnumerator LoadRoutine(int no)
         {
             Texture2D tex = null;
+            for (int attempt = 0; attempt <= Retries && tex == null; attempt++)
+            {
+                if (attempt > 0) yield return new WaitForSecondsRealtime(0.6f * attempt);
+                yield return Fetch(no, t => tex = t);
+            }
+            if (tex != null)
+            {
+                _cache[no] = tex;
+                Touch(no);
+                Trim();
+            }
+            if (_waiting.TryGetValue(no, out var list))
+            {
+                _waiting.Remove(no);
+                foreach (var cb in list) cb?.Invoke(tex);
+            }
+        }
+
+        IEnumerator Fetch(int no, Action<Texture2D> done)
+        {
+            Texture2D tex = null;
             using (var req = UnityWebRequest.Get(StampCatalog.Url(no)))
             {
                 yield return req.SendWebRequest();
@@ -61,17 +84,7 @@ namespace Piamo
                 }
                 else Debug.LogWarning($"[Stamps] {StampCatalog.FileName(no)} を読みこめませんでした: {req.error}");
             }
-            if (tex != null)
-            {
-                _cache[no] = tex;
-                Touch(no);
-                Trim();
-            }
-            if (_waiting.TryGetValue(no, out var list))
-            {
-                _waiting.Remove(no);
-                foreach (var cb in list) cb?.Invoke(tex);
-            }
+            done(tex);
         }
 
         void Touch(int no)

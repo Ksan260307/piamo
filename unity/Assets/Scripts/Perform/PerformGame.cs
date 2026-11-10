@@ -204,6 +204,8 @@ namespace Piamo
         public const float StepCatchUp = 2.5f;
         /// <summary>メロディを はなす まで（音の長さの わりあい。おなじ音が つづいても きこえるように）。</summary>
         public const float Gate = 0.9f;
+        /// <summary>とめたあと つづきから ひくときの カウント（3・2・1）。</summary>
+        public const int ResumeTicks = 3;
 
         public PerformSong Song { get; private set; }
         public Mode CurrentMode { get; private set; }
@@ -230,6 +232,15 @@ namespace Piamo
         public List<AccNote> AccNotes { get; private set; } = new List<AccNote>();
         /// <summary>カウントの のこり（3, 2, 1）。カウント中でなければ 0。</summary>
         public int CountLeft { get; private set; }
+        /// <summary>つづけて あたった 数（ミス・まちがいで 0）。</summary>
+        public int Combo { get; private set; }
+        public int BestCombo { get; private set; }
+        /// <summary>ひとつずつ：いまの音を まっている 時間（秒）。</summary>
+        public float StepWait { get; private set; }
+        /// <summary>あたりの はばの かけ算（1 = ふつう。大きいほど はやくても おそくても あたり）。</summary>
+        public float WindowScale { get; set; } = 1f;
+        /// <summary>とめたあと、つづきの カウント中。</summary>
+        public bool Resuming => _resumeTimer > 0f;
 
         public event Action<int> CountTick;              // のこりの数（4, 3, 2, 1）
         public event Action<int, float> MelodyOn;        // 番号・鳴らす秒数
@@ -240,7 +251,7 @@ namespace Piamo
         public event Action Finished;
 
         int _nextOn, _nextAcc, _judgeFrom;
-        float _stepTarget;
+        float _stepTarget, _resumeTimer;
         readonly List<int> _soundingMelody = new List<int>();
         readonly List<int> _soundingAcc = new List<int>();
 
@@ -261,6 +272,9 @@ namespace Piamo
             AccNotes = accompaniment ? PerformAccompaniment.Build(song) : new List<AccNote>();
             Grades = new Grade[song.notes.Count];
             Perfect = Good = Missed = Mistakes = 0;
+            Combo = BestCombo = 0;
+            StepWait = 0f;
+            _resumeTimer = 0f;
             _nextOn = _nextAcc = _judgeFrom = 0;
             NextIndex = 0;
             Paused = false;
@@ -294,7 +308,19 @@ namespace Piamo
         {
             if (Paused == paused) return;
             Paused = paused;
-            if (paused) Silence();
+            if (paused)
+            {
+                Silence();
+                _resumeTimer = 0f;
+                if (Current == State.Playing) CountLeft = 0;
+            }
+            else if (Current == State.Playing && CurrentMode != Mode.Step && Song != null)
+            {
+                // いきなり つづかないように 3・2・1 と かぞえてから
+                _resumeTimer = ResumeTicks * Song.Pulse * SecondsPerBeat;
+                CountLeft = ResumeTicks;
+                CountTick?.Invoke(CountLeft);
+            }
         }
 
         public void SetTempo(float scale) => TempoScale = Math.Max(0.3f, scale);
@@ -325,13 +351,32 @@ namespace Piamo
         {
             float spb = SecondsPerBeat;
             float sec = Math.Min(LateSecondsMax, Math.Max(LateSeconds, n.beats * spb * 0.5f));
-            return sec / spb;
+            return sec * WindowScale / spb;
+        }
+
+        void Hit()
+        {
+            Combo++;
+            BestCombo = Math.Max(BestCombo, Combo);
         }
 
         public void Update(float dt)
         {
             if (Song == null || Current == State.Idle || Current == State.Finished || Paused) return;
             float spb = SecondsPerBeat;
+            if (_resumeTimer > 0f)
+            {
+                _resumeTimer -= dt;
+                int left = (int)Math.Ceiling(_resumeTimer / (Song.Pulse * spb) - 1e-4f);
+                while (CountLeft > 1 && CountLeft > left)
+                {
+                    CountLeft--;
+                    CountTick?.Invoke(CountLeft);
+                }
+                if (_resumeTimer > 0f) return;
+                _resumeTimer = 0f;
+                CountLeft = 0;
+            }
             if (CurrentMode == Mode.Step)
             {
                 if (Beat < _stepTarget) Beat = Math.Min(_stepTarget, Beat + dt / spb * StepCatchUp);
@@ -391,8 +436,8 @@ namespace Piamo
                 }
             }
 
-            // いっしょに：おそすぎた音は「ミス」
-            if (CurrentMode == Mode.Along)
+            // いっしょに：おそすぎた音は「ミス」（きく では かぞえない）
+            if (CurrentMode != Mode.Step)
             {
                 while (_judgeFrom < Total)
                 {
@@ -400,13 +445,20 @@ namespace Piamo
                     if (Grades[_judgeFrom] == Grade.None)
                     {
                         if (Beat <= n.on + LateBeats(n)) break;
-                        Grades[_judgeFrom] = Grade.Miss;
-                        Missed++;
-                        Judged?.Invoke(_judgeFrom, Grade.Miss);
+                        if (CurrentMode == Mode.Along)
+                        {
+                            Grades[_judgeFrom] = Grade.Miss;
+                            Missed++;
+                            Combo = 0;
+                            Judged?.Invoke(_judgeFrom, Grade.Miss);
+                        }
                     }
                     _judgeFrom++;
                 }
             }
+
+            // ひとつずつ：つぎの音に とどいてから まっている 時間
+            if (CurrentMode == Mode.Step && NextIndex < Total && Beat >= Song.notes[NextIndex].on - 1e-4f) StepWait += dt;
 
             bool done = CurrentMode == Mode.Step
                 ? NextIndex >= Total && Beat >= Song.Length + TailBeats - 1e-4f
@@ -432,10 +484,13 @@ namespace Piamo
                 if (midi != n.midi)
                 {
                     Mistakes++;
+                    Combo = 0;
                     return PressResult.Wrong;
                 }
                 Grades[NextIndex] = Grade.Perfect;
                 Perfect++;
+                Hit();
+                StepWait = 0f;
                 if (Beat < n.on) Beat = n.on;
                 Judged?.Invoke(NextIndex, Grade.Perfect);
                 NextIndex++;
@@ -443,7 +498,8 @@ namespace Piamo
                 _stepTarget = NextIndex < Total ? Song.notes[NextIndex].on : Song.Length + TailBeats;
                 return PressResult.Correct;
             }
-            if (CurrentMode != Mode.Along) return PressResult.Ignored;
+            // いっしょに（と きく）：ちかくの 同じ音に あてる。きく では ほめるだけ（ほしには しない）
+            if (_resumeTimer > 0f) return PressResult.Ignored;
             float spb = SecondsPerBeat;
             int best = -1;
             float bestAbs = float.MaxValue;
@@ -451,7 +507,7 @@ namespace Piamo
             {
                 var n = Song.notes[i];
                 float late = (Beat - n.on) * spb;   // + は おそい
-                if (late < -EarlySeconds) break;
+                if (late < -EarlySeconds * WindowScale) break;
                 if (Grades[i] != Grade.None || n.midi != midi) continue;
                 if (late > LateBeats(n) * spb) continue;
                 if (Math.Abs(late) < bestAbs)
@@ -461,10 +517,11 @@ namespace Piamo
                 }
             }
             if (best < 0) return PressResult.Wrong;
-            var g = bestAbs <= PerfectSeconds ? Grade.Perfect : Grade.Good;
+            var g = bestAbs <= PerfectSeconds * (0.5f + 0.5f * WindowScale) ? Grade.Perfect : Grade.Good;
             Grades[best] = g;
             if (g == Grade.Perfect) Perfect++;
             else Good++;
+            Hit();
             Judged?.Invoke(best, g);
             return PressResult.Correct;
         }

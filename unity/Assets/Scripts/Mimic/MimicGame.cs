@@ -7,18 +7,25 @@ namespace Piamo
     /// まねっこモードの すすみかた（画面や音とは別の、きまりだけ。テストしやすいように時間は Update で外からもらう）。
     ///  1. おてほん（Demo）: 曲のひとまとまりを鳴らす（けんばんも ひからせる）
     ///  2. まねする番（Listen）: 子どもが同じ音を、同じ順に おす。ちがう音を おしても やりなおしにはならない
-    ///     正解の音を おさないまま HintSeconds たつと、正解の けんばんが ひかる（ヒント）
+    ///     正解の音を おさないまま HintSeconds たつか、まちがいが HintAfterMistakes 回 つづくと、正解の けんばんが ひかる（ヒント）
     ///  3. できた（Cleared）→ つぎの ひとまとまりへ。ぜんぶできたら おしまい（Finished）
+    /// まつ時間を へらすため、
+    ///  - おてほんの さいごの音が 鳴りはじめたら、もう まねする番（音が のこっていても おした音を 数える）
+    ///  - おてほんの前・とちゅうでも、正しい はじめの音を おせば おてほんを止めて まねする番へ（ちがう音は 数えない）
+    ///  - 「できた！」の あいだに つぎの ひとまとまりの はじめの音を おせば、おてほんを とばして つぎへ
     /// </summary>
     public class MimicGame
     {
         public enum State { Idle, Intro, Demo, Listen, Cleared, Finished }
         public enum PressResult { Ignored, Correct, Wrong, RoundComplete }
 
-        public const float IntroSeconds = 0.9f;
-        public const float AfterDemoSeconds = 0.35f;
-        public const float ClearedSeconds = 1.7f;
+        public const float IntroSeconds = 0.6f;
+        /// <summary>おてほんの さいごの音が 鳴りはじめてから、まねする番に なるまで。</summary>
+        public const float ListenAfterLastNote = 0.05f;
+        public const float ClearedSeconds = 1.1f;
         public const int RandomRounds = 6;
+        /// <summary>まちがいが この回数 つづいたら、まよった時間に かかわらず ヒント。</summary>
+        public const int HintAfterMistakes = 3;
 
         public State Current { get; private set; } = State.Idle;
         public SongDef Song { get; private set; }
@@ -31,7 +38,13 @@ namespace Piamo
         public float HintSeconds { get; set; } = 10f;
         public float TempoScale { get; private set; } = 1f;
         public int Mistakes { get; private set; }
+        /// <summary>いま つづいている まちがいの回数（正解で 0 に もどる）。</summary>
+        public int WrongStreak { get; private set; }
         public bool HintShownThisNote { get; private set; }
+        /// <summary>いまの おてほんで、もう鳴らした音の数（ドットを じゅんに ひからせる）。</summary>
+        public int DemoPlayed { get; private set; }
+        /// <summary>ずらしている半音の数（オクターブのせってい）。</summary>
+        public int Transpose => _transpose;
 
         public event Action<int, float> DemoNoteOn;   // MIDI 番号・鳴らす秒数
         public event Action<int> DemoNoteOff;
@@ -44,9 +57,10 @@ namespace Piamo
         int _transpose;
         int _lengthMode;
         float _stateTime;
-        // おてほんの再生
+        // おてほんの再生（まねする番に なっても、のこりの音は 鳴らしおえる）
         readonly List<(float on, float off, int midi)> _timeline = new List<(float, float, int)>();
         int _nextOn;
+        float _demoTime;
         readonly List<int> _sounding = new List<int>();
 
         public MimicGame(int seed = 12345)
@@ -57,22 +71,24 @@ namespace Piamo
         public List<SongNote> CurrentRound => RoundIndex < Rounds.Count ? Rounds[RoundIndex] : null;
 
         /// <summary>いま おすべき音（MIDI 番号。まねする番でなければ -1）。</summary>
-        public int Expected
+        public int Expected => Current == State.Listen ? NoteAt(CurrentRound, Progress) : -1;
+
+        /// <summary>ひとまとまりの k ばんめの音（休みはのぞく。ずらしたあと）。なければ -1。</summary>
+        int NoteAt(List<SongNote> round, int k)
         {
-            get
+            if (round == null) return -1;
+            int i = 0;
+            foreach (var n in round)
             {
-                var r = CurrentRound;
-                if (Current != State.Listen || r == null) return -1;
-                int k = 0;
-                foreach (var n in r)
-                {
-                    if (n.IsRest) continue;
-                    if (k == Progress) return n.midi + _transpose;
-                    k++;
-                }
-                return -1;
+                if (n.IsRest) continue;
+                if (i == k) return n.midi + _transpose;
+                i++;
             }
+            return -1;
         }
+
+        /// <summary>いまの ひとまとまりの k ばんめの音（ずらしたあと。ドットの いろ・ヒントの なまえ用）。なければ -1。</summary>
+        public int RoundNote(int k) => NoteAt(CurrentRound, k);
 
         /// <summary>いまのひとまとまりの音の数（休みはのぞく）。</summary>
         public int RoundLength
@@ -87,8 +103,32 @@ namespace Piamo
             }
         }
 
-        public bool HintActive => Current == State.Listen && HintSeconds > 0f && WaitTime >= HintSeconds;
+        /// <summary>曲ぜんぶの音の数（おまかせは、いまある ひとまとまりの ぶん）。</summary>
+        public int TotalNotes
+        {
+            get
+            {
+                int k = 0;
+                foreach (var r in Rounds)
+                foreach (var n in r)
+                    if (!n.IsRest) k++;
+                return k;
+            }
+        }
+
+        public bool HintActive => Current == State.Listen && HintSeconds > 0f && (WaitTime >= HintSeconds || WrongStreak >= HintAfterMistakes);
         public int HintKey => HintActive ? Expected : -1;
+
+        /// <summary>おわったときの ほし（まちがいの 少なさ。1〜3）。おわっていなければ 0。</summary>
+        public int Stars
+        {
+            get
+            {
+                if (Current != State.Finished) return 0;
+                int total = Math.Max(1, TotalNotes);
+                return Mistakes <= total / 10 ? 3 : Mistakes <= total / 3 ? 2 : 1;
+            }
+        }
 
         /// <summary>
         /// はじめる。lengthMode: 0 みじかい（4 音まで）・1 ふつう（フレーズ）・2 ながい（2 フレーズ）。
@@ -96,6 +136,7 @@ namespace Piamo
         /// </summary>
         public void Start(SongDef song, int lengthMode, float tempoScale, float hintSeconds, int transpose)
         {
+            StopDemo();
             Song = song;
             _lengthMode = lengthMode;
             TempoScale = Math.Max(0.3f, tempoScale);
@@ -111,7 +152,7 @@ namespace Piamo
 
         public void Stop()
         {
-            StopDemoNotes();
+            StopDemo();
             SetState(State.Idle);
         }
 
@@ -119,8 +160,31 @@ namespace Piamo
         public void ReplayDemo()
         {
             if (Current == State.Idle || Current == State.Finished || Current == State.Cleared) return;
-            StopDemoNotes();
+            StopDemo();
             BeginDemo();
+        }
+
+        /// <summary>おてほんの とちゅうなら 止めて、つぎは「よく きいてね」から（タブを かくした とき）。</summary>
+        public void Rewind()
+        {
+            if (Current != State.Demo) return;
+            StopDemo();
+            BeginIntro();
+        }
+
+        /// <summary>はやさを かえる（つぎの おてほんから）。</summary>
+        public void SetTempo(float tempoScale) => TempoScale = Math.Max(0.3f, tempoScale);
+
+        /// <summary>オクターブを かえたとき：いまの ひとまとまりを、あたらしい たかさで はじめから。</summary>
+        public void SetTranspose(int transpose)
+        {
+            if (transpose == _transpose) return;
+            _transpose = transpose;
+            if (Current == State.Intro || Current == State.Demo || Current == State.Listen)
+            {
+                StopDemo();
+                BeginIntro();
+            }
         }
 
         public static List<List<SongNote>> BuildRounds(SongDef song, int lengthMode)
@@ -200,7 +264,9 @@ namespace Piamo
         {
             Progress = 0;
             WaitTime = 0f;
+            WrongStreak = 0;
             HintShownThisNote = false;
+            DemoPlayed = 0;
             SetState(State.Intro);
         }
 
@@ -208,9 +274,12 @@ namespace Piamo
         {
             Progress = 0;
             WaitTime = 0f;
+            WrongStreak = 0;
             HintShownThisNote = false;
+            DemoPlayed = 0;
             _timeline.Clear();
             _nextOn = 0;
+            _demoTime = 0f;
             float beat = 60f / (Song.bpm * TempoScale);
             float t = 0f;
             foreach (var n in CurrentRound)
@@ -220,6 +289,14 @@ namespace Piamo
                 t += d;
             }
             SetState(State.Demo);
+        }
+
+        void BeginListen()
+        {
+            WaitTime = 0f;
+            WrongStreak = 0;
+            HintShownThisNote = false;
+            SetState(State.Listen);
         }
 
         /// <summary>おてほんが ぜんぶ鳴りおわる時間（秒）。</summary>
@@ -233,6 +310,17 @@ namespace Piamo
             }
         }
 
+        /// <summary>おてほんの さいごの音が 鳴りはじめる時間（秒）。</summary>
+        float LastOnset => _timeline.Count > 0 ? _timeline[_timeline.Count - 1].on : 0f;
+
+        /// <summary>おてほんを止める（鳴っている音も止めて、のこりは鳴らさない）。</summary>
+        void StopDemo()
+        {
+            foreach (int m in _sounding) DemoNoteOff?.Invoke(m);
+            _sounding.Clear();
+            _nextOn = _timeline.Count;
+        }
+
         void SetState(State s)
         {
             Current = s;
@@ -240,47 +328,46 @@ namespace Piamo
             StateChanged?.Invoke(s);
         }
 
-        void StopDemoNotes()
+        /// <summary>おてほんの音を すすめる（まねする番に なってからも、鳴っている音を 止めるまで）。</summary>
+        void UpdateDemo(float dt)
         {
-            foreach (int m in _sounding) DemoNoteOff?.Invoke(m);
-            _sounding.Clear();
+            _demoTime += dt;
+            while (_nextOn < _timeline.Count && _timeline[_nextOn].on <= _demoTime)
+            {
+                var e = _timeline[_nextOn++];
+                _sounding.Add(e.midi);
+                DemoPlayed++;
+                DemoNoteOn?.Invoke(e.midi, e.off - e.on);
+            }
+            for (int i = _sounding.Count - 1; i >= 0; i--)
+            {
+                // 鳴りおわった音を止める（同じ音がつづくときのために、時間の順に見る）
+                int m = _sounding[i];
+                bool stillOn = false;
+                foreach (var e in _timeline)
+                {
+                    if (e.midi == m && e.on <= _demoTime && e.off > _demoTime) { stillOn = true; break; }
+                }
+                if (!stillOn)
+                {
+                    _sounding.RemoveAt(i);
+                    DemoNoteOff?.Invoke(m);
+                }
+            }
         }
 
         public void Update(float dt)
         {
             _stateTime += dt;
+            if (Current == State.Demo || (Current == State.Listen && _sounding.Count > 0)) UpdateDemo(dt);
             switch (Current)
             {
                 case State.Intro:
                     if (_stateTime >= IntroSeconds) BeginDemo();
                     break;
                 case State.Demo:
-                    while (_nextOn < _timeline.Count && _timeline[_nextOn].on <= _stateTime)
-                    {
-                        var e = _timeline[_nextOn++];
-                        _sounding.Add(e.midi);
-                        DemoNoteOn?.Invoke(e.midi, e.off - e.on);
-                    }
-                    for (int i = _sounding.Count - 1; i >= 0; i--)
-                    {
-                        // 鳴りおわった音を止める（同じ音がつづくときのために、時間の順に見る）
-                        int m = _sounding[i];
-                        bool stillOn = false;
-                        foreach (var e in _timeline)
-                        {
-                            if (e.midi == m && e.on <= _stateTime && e.off > _stateTime) { stillOn = true; break; }
-                        }
-                        if (!stillOn)
-                        {
-                            _sounding.RemoveAt(i);
-                            DemoNoteOff?.Invoke(m);
-                        }
-                    }
-                    if (_nextOn >= _timeline.Count && _sounding.Count == 0 && _stateTime >= DemoLength + AfterDemoSeconds)
-                    {
-                        WaitTime = 0f;
-                        SetState(State.Listen);
-                    }
+                    // さいごの音が 鳴りはじめたら、もう まねする番（鳴りおわるのを またない）
+                    if (_nextOn >= _timeline.Count && _demoTime >= LastOnset + ListenAfterLastNote) BeginListen();
                     break;
                 case State.Listen:
                     WaitTime += dt;
@@ -296,35 +383,64 @@ namespace Piamo
             }
         }
 
-        void NextRound()
+        /// <summary>つぎの ひとまとまりへ（おわりなら Finished）。つづけられたら true。</summary>
+        bool AdvanceRound()
         {
             RoundIndex++;
-            if (Song.random && RoundIndex < RandomRounds) Rounds.Add(RandomRound(RoundIndex));
+            if (Song.random && RoundIndex < RandomRounds && RoundIndex >= Rounds.Count) Rounds.Add(RandomRound(RoundIndex));
             if (RoundIndex >= Rounds.Count)
             {
                 RoundIndex = Rounds.Count - 1;
                 SetState(State.Finished);
                 SongFinished?.Invoke();
-                return;
+                return false;
             }
-            BeginIntro();
+            return true;
+        }
+
+        void NextRound()
+        {
+            if (AdvanceRound()) BeginIntro();
         }
 
         /// <summary>子どもが けんばんを おした。</summary>
         public PressResult Press(int midi)
         {
-            if (Current != State.Listen) return PressResult.Ignored;
-            int expected = Expected;
-            if (midi != expected)
+            switch (Current)
+            {
+                case State.Intro:
+                case State.Demo:
+                    // おてほんの前・とちゅうでも、正しい はじめの音なら まねする番へ（ちがう音は 数えない・おてほんも 止めない）
+                    if (midi != NoteAt(CurrentRound, 0)) return PressResult.Ignored;
+                    StopDemo();
+                    BeginListen();
+                    break;
+                case State.Cleared:
+                    // 「できた！」の あいだに つぎの ひとまとまりの はじめの音 → おてほんを とばして つぎへ
+                    if (RoundIndex + 1 >= Rounds.Count || midi != NoteAt(Rounds[RoundIndex + 1], 0)) return PressResult.Ignored;
+                    if (!AdvanceRound()) return PressResult.Ignored;
+                    Progress = 0;
+                    DemoPlayed = 0;
+                    BeginListen();
+                    break;
+                case State.Listen:
+                    break;
+                default:
+                    return PressResult.Ignored;
+            }
+            if (midi != Expected)
             {
                 Mistakes++;
+                WrongStreak++;
                 return PressResult.Wrong;
             }
             Progress++;
             WaitTime = 0f;
+            WrongStreak = 0;
             HintShownThisNote = false;
             if (Progress >= RoundLength)
             {
+                StopDemo();
                 SetState(State.Cleared);
                 RoundCleared?.Invoke();
                 return PressResult.RoundComplete;

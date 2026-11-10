@@ -11,10 +11,38 @@ namespace Piamo
         /// <summary>せっていが かわったときに、ボタンの えらばれかたを なおす。</summary>
         readonly List<Action> _settingRefresh = new List<Action>();
         readonly Dictionary<string, VisualElement> _settingControls = new Dictionary<string, VisualElement>();
+        /// <summary>セクションの 見出し（上の ボタンで そこへ とぶ）。</summary>
+        readonly Dictionary<string, VisualElement> _sectionTitles = new Dictionary<string, VisualElement>();
+        VisualElement _sectionChips;
 
         static readonly string[] OctaveCountLabels = { "8", "15", "22", "29", "36" };
 
         public VisualElement SettingControl(string key) => _settingControls.TryGetValue(key, out var e) ? e : null;
+
+        /// <summary>せっていの セクション（見出しの ボタンの じゅん）。</summary>
+        static readonly (string key, string label, string icon)[] SettingSections =
+        {
+            ("sound", "おと", "sec_sound"),
+            ("keys", "けんばん", "sec_keys"),
+            ("mimic", "まねっこ", "sec_mimic"),
+            ("perform", "えんそう", "sec_perform"),
+            ("screen", "がめん", "sec_screen"),
+            ("parents", "おうちの かたへ", "sec_parents"),
+        };
+
+        /// <summary>テスト用：いま いちばん上に 見えている セクション。</summary>
+        public string SettingsSectionInView
+        {
+            get
+            {
+                if (_settingsScroll == null) return null;
+                float y = _settingsScroll.scrollOffset.y + 20f;
+                string best = SettingSections[0].key;
+                foreach (var sec in SettingSections)
+                    if (_sectionTitles.TryGetValue(sec.key, out var t) && t.layout.height > 0f && t.layout.y <= y) best = sec.key;
+                return best;
+            }
+        }
 
         void BuildSettings()
         {
@@ -25,8 +53,21 @@ namespace Piamo
             var c = _settingsScroll.contentContainer;
             var s = SaveSystem.Settings;
 
+            // 見出しへ とぶ ボタン（ながい せっていを スクロール しなくても いいように）
+            _sectionChips = UIParts.El("section-chips", c);
+            foreach (var sec in SettingSections)
+            {
+                string k = sec.key;
+                var chip = UIParts.Candy(sec.label, "white", Icon(sec.icon), () =>
+                {
+                    Click();
+                    ScrollToSection(k);
+                }, _sectionChips, "section-chip");
+                chip.name = "section-chip-" + k;
+            }
+
             // ---------------- おと ----------------
-            Section(c, "おと", "sec_sound");
+            Section(c, "おと", "sec_sound", "sound");
             {
                 var row = Row(c, "がっき", "けんばんを おしたときの おと");
                 var grid = UIParts.El("grid", row.control);
@@ -67,7 +108,7 @@ namespace Piamo
             Toggle(c, "sustain", "おとを のばす", "はなしても、おとが のこります（ペダル）", () => SaveSystem.Settings.sustain, v => SaveSystem.Settings.sustain = v);
 
             // ---------------- けんばん ----------------
-            Section(c, "けんばん", "sec_keys");
+            Section(c, "けんばん", "sec_keys", "keys");
             {
                 var row = Row(c, "けんばんの かず", "しろい けんばんの かず（1〜5 オクターブ）");
                 var seg = new Segmented(OctaveCountLabels, s.octaves - 1);
@@ -128,7 +169,7 @@ namespace Piamo
             }
 
             // ---------------- まねっこ ----------------
-            Section(c, "まねっこ", "sec_mimic");
+            Section(c, "まねっこ", "sec_mimic", "mimic");
             Choice(c, "mimicSpeed", "おてほんの はやさ", null, new[] { "ゆっくり", "ふつう", "はやい" },
                 () => SaveSystem.Settings.mimicSpeed, v => SaveSystem.Settings.mimicSpeed = v);
             Choice(c, "mimicLength", "まねする ながさ", "1かいに まねする おとの かず", new[] { "みじかい", "ふつう", "ながい" },
@@ -143,16 +184,20 @@ namespace Piamo
             Toggle(c, "demoLights", "おてほんで ひかる", "おてほんの とき、けんばんも ひからせます", () => SaveSystem.Settings.demoLights, v => SaveSystem.Settings.demoLights = v);
 
             // ---------------- えんそう ----------------
-            Section(c, "えんそう", "sec_perform");
+            Section(c, "えんそう", "sec_perform", "perform");
             Choice(c, "performSpeed", "えんそうの はやさ", null, new[] { "ゆっくり", "ふつう", "はやい" },
                 () => SaveSystem.Settings.performSpeed, v => SaveSystem.Settings.performSpeed = v);
             Toggle(c, "performMelody", "おてほんの メロディ", "「いっしょに」で、ひく メロディも アプリが ちいさく ならします", () => SaveSystem.Settings.performMelody, v => SaveSystem.Settings.performMelody = v);
             Toggle(c, "performAccomp", "ばんそう", "ドミソの おとで、いっしょに ひいてくれます", () => SaveSystem.Settings.performAccomp, v => SaveSystem.Settings.performAccomp = v);
+            Choice(c, "performWindow", "あたりの はば", "「いっしょに」で、すこし ずれても あたりに します", new[] { "ひろい", "ふつう" },
+                () => SaveSystem.Settings.performWindow, v => SaveSystem.Settings.performWindow = v);
 
             // ---------------- がめん ----------------
-            Section(c, "がめん", "sec_screen");
+            Section(c, "がめん", "sec_screen", "screen");
             Toggle(c, "noteEffects", "おんぷが とぶ", "けんばんを おすと ♪ が とびだします", () => SaveSystem.Settings.noteEffects, v => SaveSystem.Settings.noteEffects = v);
             Toggle(c, "uiSounds", "ボタンの おと", null, () => SaveSystem.Settings.uiSounds, v => SaveSystem.Settings.uiSounds = v);
+            Toggle(c, "reduceMotion", "うごきを すくなく", "どうぶつが ゆれない・かみふぶきが でない", () => SaveSystem.Settings.reduceMotion, v => SaveSystem.Settings.reduceMotion = v);
+            Toggle(c, "pcKeyLabels", "パソコンの キー", "けんばんに A S D F… の もじを かきます（パソコンの キーボードで ひけます）", () => SaveSystem.Settings.pcKeyLabels, v => SaveSystem.Settings.pcKeyLabels = v);
             {
                 var row = Row(c, "はいけい", null);
                 var wrap = UIParts.El("grid", row.control);
@@ -176,12 +221,23 @@ namespace Piamo
             }
 
             // ---------------- おうちの かたへ ----------------
-            Section(c, "おうちの かたへ", "sec_parents");
+            Section(c, "おうちの かたへ", "sec_parents", "parents");
             UIParts.Text("スタンプは、ピアノの けんばんを 1にちに 10かい おすと 1こ もらえます（1にち 1こまで）。" +
-                         "5こめ・10こめ… は でっかい スタンプです。スタンプは 365しゅるい あります。" +
-                         "せっていと スタンプは、この たんまつ（ブラウザ）に ほぞんされます。", "parents-text", c);
+                         "5こめ・10こめ… は でっかい スタンプです。スタンプは 365しゅるい あります。\n" +
+                         "「まねっこ」は おてほんを きいて まねする あそび、「えんそう」は ひかる けんばんを いっしょに ひく あそびです。" +
+                         "どちらも まちがいの すくなさで ほしが 1〜3こ つきます。「じゆうに ひく」では ひいた きょくを ろくおん できます。\n" +
+                         "せってい・スタンプ・ほし・ろくおんは、この たんまつ（ブラウザ）に ほぞんされます。", "parents-text", c);
+            Toggle(c, "keepAwake", "がめんを くらく しない", "ピアノで あそんでいる あいだ、スリープ しません（たいおう している ブラウザだけ）", () => SaveSystem.Settings.keepAwake, v => SaveSystem.Settings.keepAwake = v);
+            Toggle(c, "vibrate", "ぶるっと ふるえる", "スタンプや ほしを もらったとき（たいおう している スマホだけ）", () => SaveSystem.Settings.vibrate, v => SaveSystem.Settings.vibrate = v);
             {
-                var row = Row(c, "せっていを もとに もどす", "スタンプは そのままです");
+                var labels = new List<string>();
+                foreach (int m in PiamoSettings.PlayLimitChoices) labels.Add(m == 0 ? "なし" : MinutesText(m));
+                Choice(c, "playLimit", "あそぶ じかんの めやす", "この じかん あそぶと「すこし きゅうけい しようね」と おしらせします", labels.ToArray(),
+                    () => Mathf.Max(0, Array.IndexOf(PiamoSettings.PlayLimitChoices, SaveSystem.Settings.playLimit)),
+                    v => SaveSystem.Settings.playLimit = PiamoSettings.PlayLimitChoices[v]);
+            }
+            {
+                var row = Row(c, "せっていを もとに もどす", "スタンプ・ほし・ろくおんは そのままです");
                 UIParts.Candy("もとに もどす", "white", null, () =>
                 {
                     Click();
@@ -194,9 +250,9 @@ namespace Piamo
                 }, row.control);
             }
             {
-                var row = Row(c, "スタンプを ぜんぶ けす", "2びょう ながおし すると けせます（もとに もどせません）");
+                var row = Row(c, "スタンプと ほしを ぜんぶ けす", "2びょう ながおし すると けせます（もとに もどせません）");
                 var hold = new HoldButton("ながおしで けす", "pink", 2f);
-                hold.Completed += () => Confirm("スタンプを ぜんぶ けしますか？\nもとに もどせません。", "けす", () =>
+                hold.Completed += () => Confirm("スタンプと ほしを ぜんぶ けしますか？\nもとに もどせません。", "けす", () =>
                 {
                     SaveSystem.ResetStamps();
                     Stamps = new StampBook(SaveSystem.Data);
@@ -206,10 +262,10 @@ namespace Piamo
                 row.control.Add(hold);
                 _settingControls["resetStamps"] = hold;
             }
-            UIParts.Text($"Piamo（ぴあも） バージョン {Application.version}\n" +
+            UIParts.Text($"Piamo（ぴあも） バージョン {Application.version}{BuildDateText()}\n" +
                          "おと・スタンプの え・けんばんの かたちは、すべて この アプリの ために つくりました（Blender / Python）。\n" +
                          "フォント：M PLUS Rounded 1c（SIL Open Font License 1.1）\n" +
-                         "まねっこの きょくは、ちょさくけんの きれた むかしからの メロディです。", "credits", c);
+                         "まねっこ・えんそうの きょくは、ちょさくけんの きれた むかしからの メロディです。", "credits", c);
 
             RefreshSettings();
         }
@@ -247,12 +303,51 @@ namespace Piamo
             return (row, control);
         }
 
-        void Section(VisualElement parent, string title, string icon)
+        void Section(VisualElement parent, string title, string icon, string key)
         {
             var t = UIParts.El("section-title", parent);
+            t.name = "section-" + key;
             var i = UIParts.El("icon", t);
             UIParts.SetIcon(i, Icon(icon));
             UIParts.Text(title, null, t);
+            _sectionTitles[key] = t;
+        }
+
+        /// <summary>その セクションの 見出しが いちばん上に くるように スクロール。</summary>
+        public void ScrollToSection(string key)
+        {
+            if (!_sectionTitles.TryGetValue(key, out var t)) return;
+            // ならびおわる まえ（ひらいた すぐ あと）なら、すこし まってから
+            if (t.layout.height < 1f)
+            {
+                _settingsScroll.schedule.Execute(() => ScrollToSection(key)).ExecuteLater(30);
+                return;
+            }
+            _settingsScroll.scrollOffset = new Vector2(0f, Mathf.Max(0f, t.layout.y - 10f));
+        }
+
+        /// <summary>せっていを ひらいたときの 見出し：ピアノの まねっこ・えんそう からなら その セクション。</summary>
+        void ScrollSettingsForContext()
+        {
+            if (Current == Page.Play && Mode == PlayMode.Mimic) ScrollToSection("mimic");
+            else if (Current == Page.Play && Mode == PlayMode.Perform) ScrollToSection("perform");
+            else _settingsScroll.scrollOffset = Vector2.zero;
+        }
+
+        /// <summary>「15ふん」「30ぷん」（よみかたで ふん・ぷん が かわる）。</summary>
+        public static string MinutesText(int minutes)
+        {
+            int d = minutes % 10;
+            bool pun = d == 0 || d == 1 || d == 3 || d == 4 || d == 6 || d == 8;
+            return $"{minutes}{(pun ? "ぷん" : "ふん")}";
+        }
+
+        /// <summary>ビルドした日（Resources/build_info.txt）。なければ から。</summary>
+        static string BuildDateText()
+        {
+            var t = Resources.Load<TextAsset>("build_info");
+            string d = t != null ? t.text.Trim() : "";
+            return string.IsNullOrEmpty(d) ? "" : $"（{d}）";
         }
 
         void Toggle(VisualElement parent, string key, string label, string sub, Func<bool> get, Action<bool> set, string on = "オン", string off = "オフ")

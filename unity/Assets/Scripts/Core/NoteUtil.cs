@@ -21,6 +21,10 @@ namespace Piamo
         static readonly string[] Katakana = { "ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ" };
         static readonly string[] Hiragana = { "ど", "ど♯", "れ", "れ♯", "み", "ふぁ", "ふぁ♯", "そ", "そ♯", "ら", "ら♯", "し" };
         static readonly string[] Letters = { "C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B" };
+        // ♭の 調（ヘ長調 など）で つかう 黒鍵の 名前
+        static readonly string[] KatakanaFlat = { "ド", "レ♭", "レ", "ミ♭", "ミ", "ファ", "ソ♭", "ソ", "ラ♭", "ラ", "シ♭", "シ" };
+        static readonly string[] HiraganaFlat = { "ど", "れ♭", "れ", "み♭", "み", "ふぁ", "そ♭", "そ", "ら♭", "ら", "し♭", "し" };
+        static readonly string[] LettersFlat = { "C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B" };
 
         // ドレミの いろ（ド あか・レ だいだい・ミ きいろ・ファ みどり・ソ みずいろ・ラ あお・シ むらさき）
         static readonly Color[] WhiteColors =
@@ -47,14 +51,17 @@ namespace Piamo
 
         public static float Frequency(int midi) => 440f * Mathf.Pow(2f, (midi - 69) / 12f);
 
-        public static string Name(int midi, LabelMode mode)
+        public static string Name(int midi, LabelMode mode) => Name(midi, mode, false);
+
+        /// <summary>音の名前。flats なら 黒鍵を ♭ で（シ♭ など）。</summary>
+        public static string Name(int midi, LabelMode mode, bool flats)
         {
             int pc = PitchClass(midi);
             switch (mode)
             {
-                case LabelMode.Katakana: return Katakana[pc];
-                case LabelMode.Hiragana: return Hiragana[pc];
-                case LabelMode.Letters: return Letters[pc];
+                case LabelMode.Katakana: return flats ? KatakanaFlat[pc] : Katakana[pc];
+                case LabelMode.Hiragana: return flats ? HiraganaFlat[pc] : Hiragana[pc];
+                case LabelMode.Letters: return flats ? LettersFlat[pc] : Letters[pc];
                 default: return "";
             }
         }

@@ -30,6 +30,14 @@ namespace Piamo
         public List<string> clearedSongs = new List<string>();
         /// <summary>えんそうの ほし。</summary>
         public List<SongStars> performStars = new List<SongStars>();
+        /// <summary>まねっこの ほし（まちがいの 少なさ）。</summary>
+        public List<SongStars> mimicStars = new List<SongStars>();
+        /// <summary>さいごに あそんだ モード（0 じゆう・1 まねっこ・2 えんそう）と 曲。</summary>
+        public int lastPlayMode;
+        public string lastMimicSong = "";
+        public string lastPerformSong = "";
+        /// <summary>じゆうに ひく の ろくおん（ミリ秒・MIDI 番号・おした 1／はなした 0 の 3 つずつ）。</summary>
+        public List<int> recording = new List<int>();
 
         public void Repair()
         {
@@ -38,17 +46,13 @@ namespace Piamo
             stampDays ??= new List<int>();
             pendingDays ??= new List<int>();
             clearedSongs ??= new List<string>();
-            performStars ??= new List<SongStars>();
-            // こわれた ほしを なおす（id のないもの・はんいの外・だぶりは いちばん よいもの）
-            var best = new Dictionary<string, int>();
-            foreach (var p in performStars)
-            {
-                if (p == null || string.IsNullOrEmpty(p.id)) continue;
-                int v = Mathf.Clamp(p.stars, 0, 3);
-                if (!best.TryGetValue(p.id, out int b) || v > b) best[p.id] = v;
-            }
-            performStars.Clear();
-            foreach (var kv in best) if (kv.Value > 0) performStars.Add(new SongStars { id = kv.Key, stars = kv.Value });
+            performStars = RepairStars(performStars);
+            mimicStars = RepairStars(mimicStars);
+            lastPlayMode = Mathf.Clamp(lastPlayMode, 0, 2);
+            lastMimicSong ??= "";
+            lastPerformSong ??= "";
+            recording ??= new List<int>();
+            if (recording.Count % 3 != 0 || recording.Count > Recorder.MaxEvents * 3) recording.Clear();
             stampDays.RemoveAll(d => d <= 0);
             pendingDays.RemoveAll(d => d <= 0 || stampDays.Contains(d));
             // おなじ日の もらいすぎを なおす
@@ -58,17 +62,34 @@ namespace Piamo
             version = CurrentVersion;
         }
 
-        public int StarsFor(string id)
+        /// <summary>こわれた ほしを なおす（id のないもの・はんいの外・だぶりは いちばん よいもの）。</summary>
+        static List<SongStars> RepairStars(List<SongStars> list)
         {
-            foreach (var p in performStars) if (p.id == id) return p.stars;
+            var best = new Dictionary<string, int>();
+            if (list != null)
+            {
+                foreach (var p in list)
+                {
+                    if (p == null || string.IsNullOrEmpty(p.id)) continue;
+                    int v = Mathf.Clamp(p.stars, 0, 3);
+                    if (!best.TryGetValue(p.id, out int b) || v > b) best[p.id] = v;
+                }
+            }
+            var result = new List<SongStars>();
+            foreach (var kv in best) if (kv.Value > 0) result.Add(new SongStars { id = kv.Key, stars = kv.Value });
+            return result;
+        }
+
+        static int Stars(List<SongStars> list, string id)
+        {
+            foreach (var p in list) if (p.id == id) return p.stars;
             return 0;
         }
 
-        /// <summary>ほしを きろくする（いままでより よいときだけ）。よくなったら true。</summary>
-        public bool RecordStars(string id, int stars)
+        static bool Record(List<SongStars> list, string id, int stars)
         {
             stars = Mathf.Clamp(stars, 0, 3);
-            foreach (var p in performStars)
+            foreach (var p in list)
             {
                 if (p.id != id) continue;
                 if (stars <= p.stars) return false;
@@ -76,8 +97,33 @@ namespace Piamo
                 return true;
             }
             if (stars <= 0) return false;
-            performStars.Add(new SongStars { id = id, stars = stars });
+            list.Add(new SongStars { id = id, stars = stars });
             return true;
+        }
+
+        public int StarsFor(string id) => Stars(performStars, id);
+
+        /// <summary>えんそうの ほしを きろくする（いままでより よいときだけ）。よくなったら true。</summary>
+        public bool RecordStars(string id, int stars) => Record(performStars, id, stars);
+
+        /// <summary>まねっこの ほし（むかしの「ひけた」しるしだけ あれば 1）。</summary>
+        public int MimicStarsFor(string id)
+        {
+            int s = Stars(mimicStars, id);
+            return s > 0 ? s : clearedSongs.Contains(id) ? 1 : 0;
+        }
+
+        public bool RecordMimicStars(string id, int stars) => Record(mimicStars, id, stars);
+
+        /// <summary>えんそうで あつめた ほしの 合計。</summary>
+        public int TotalPerformStars
+        {
+            get
+            {
+                int t = 0;
+                foreach (var p in performStars) t += p.stars;
+                return t;
+            }
         }
     }
 
@@ -119,11 +165,23 @@ namespace Piamo
             _data.Repair();
         }
 
+        /// <summary>保存に しっぱいした回数（テスト・ようすを見る用）。</summary>
+        public static int SaveFailures { get; private set; }
+
         public static void Save()
         {
             if (_data == null) return;
-            PlayerPrefs.SetString(ActiveKey, JsonUtility.ToJson(_data));
-            PlayerPrefs.Save();
+            // ブラウザの 容量が いっぱい などで 保存できなくても、アプリは とめない
+            try
+            {
+                PlayerPrefs.SetString(ActiveKey, JsonUtility.ToJson(_data));
+                PlayerPrefs.Save();
+            }
+            catch (Exception e)
+            {
+                SaveFailures++;
+                Debug.LogWarning("[Save] 保存できませんでした: " + e.Message);
+            }
         }
 
         /// <summary>せっていを かえたあとに呼ぶ（保存して、画面や音に知らせる）。</summary>
@@ -147,6 +205,7 @@ namespace Piamo
             Data.playCount = 0;
             Data.clearedSongs.Clear();
             Data.performStars.Clear();
+            Data.mimicStars.Clear();
             Save();
         }
 

@@ -40,9 +40,53 @@ mergeInto(LibraryManager.library, {
     });
     window.addEventListener("pagehide", function () { send("OnPageHidden"); });
     window.addEventListener("beforeunload", function () { send("OnPageHidden"); });
+    // スマホの「もどる」で ページから 出ないで、アプリの「もどる」に する（履歴を 1 つ つんでおく）
+    try {
+      if (window.history && history.pushState) {
+        history.pushState({ piamo: 1 }, "");
+        window.addEventListener("popstate", function () {
+          history.pushState({ piamo: 1 }, "");
+          send("OnBrowserBack");
+        });
+      }
+    } catch (e) { }
   },
 
   PiamoVibrate: function (ms) {
     try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { }
+  },
+
+  // その土地の いまの 時（0〜23）
+  PiamoLocalHour: function () {
+    try { return new Date().getHours(); } catch (e) { return -1; }
+  },
+
+  // ひいている あいだ 画面を くらく しない（Screen Wake Lock API）。タブを もどしたら もう一度 たのむ
+  PiamoKeepAwake: function (on) {
+    try {
+      window.__piamoAwake = !!on;
+      if (!("wakeLock" in navigator)) return;
+      if (!window.__piamoAwakeHook) {
+        window.__piamoAwakeHook = true;
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible" && window.__piamoAwake && !window.__piamoLock) {
+            navigator.wakeLock.request("screen").then(function (l) {
+              window.__piamoLock = l;
+              l.addEventListener("release", function () { window.__piamoLock = null; });
+            }).catch(function () { });
+          }
+        });
+      }
+      if (on && !window.__piamoLock) {
+        navigator.wakeLock.request("screen").then(function (l) {
+          window.__piamoLock = l;
+          l.addEventListener("release", function () { window.__piamoLock = null; });
+        }).catch(function () { });
+      } else if (!on && window.__piamoLock) {
+        var l = window.__piamoLock;
+        window.__piamoLock = null;
+        l.release().catch(function () { });
+      }
+    } catch (e) { }
   },
 });

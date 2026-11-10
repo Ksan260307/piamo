@@ -454,6 +454,14 @@ def make_sfx():
         place(buf, 1.05 + i * 0.06, bell(midi(n), 0.9), 0.25)
     write_wav(os.path.join(folder, "clear.wav"), room(buf, sr, 1.2, 0.18), sr, 0.85)
 
+    # えんそうの カウント：カッ（4・3・2）と、はじまりの ポン（1。高い音）
+    for name, f, dur, gain in (("count", 1200.0, 0.09, 0.55), ("count_go", 1800.0, 0.14, 0.6)):
+        t = t_axis(dur, sr)
+        x = np.sin(2 * np.pi * f * t) * np.exp(-t / (dur * 0.25))
+        x += 0.5 * np.sin(2 * np.pi * f * 2.01 * t) * np.exp(-t / (dur * 0.12))
+        x += 0.15 * rng.normal(size=len(t)) * np.exp(-t / 0.004)
+        write_wav(os.path.join(folder, name + ".wav"), fade(x, sr, 0.0005, 0.01), sr, gain)
+
     # まちがい：やさしい「ぷぷ」
     buf = np.zeros(int(0.4 * sr))
     t = t_axis(0.12, sr)

@@ -152,17 +152,37 @@ namespace Piamo
             _pointerKey[id] = key;
         }
 
+        /// <summary>パソコンの キーの はじまり：見えているいちばん左のド（なければ いちばん左の白鍵）。</summary>
+        static int StartWhite(KeyboardLayout layout, Vector2Int range)
+        {
+            for (int i = range.x; i <= range.y; i++)
+                if (NoteUtil.PitchClass(layout.WhiteMidi(i)) == 0) return i;
+            return range.x;
+        }
+
+        /// <summary>その鍵盤を ならす パソコンの キーの 名前（なければ null）。けんばんに かくため。</summary>
+        public static string LetterFor(KeyboardLayout layout, Vector2Int range, int midi)
+        {
+            if (layout == null) return null;
+            int startWhite = StartWhite(layout, range);
+            for (int i = 0; i < WhiteKeys.Length; i++)
+            {
+                int w = startWhite + i;
+                if (w >= layout.WhiteCount) break;
+                int m = layout.WhiteMidi(w);
+                if (m == midi) return KeyName(WhiteKeys[i]);
+                if (BlackKeys[i] != Key.None && m + 1 == midi && NoteUtil.IsBlack(midi) && layout.Contains(midi)) return KeyName(BlackKeys[i]);
+            }
+            return null;
+        }
+
+        static string KeyName(Key k) => k == Key.Semicolon ? ";" : k == Key.Quote ? "'" : k.ToString();
+
         void HandleKeyboard(Keyboard kb)
         {
             var layout = play.Layout;
             if (layout == null) return;
-            var range = play.VisibleWhiteRange();
-            // 見えているいちばん左のド（なければ いちばん左の白鍵）
-            int startWhite = range.x;
-            for (int i = range.x; i <= range.y; i++)
-            {
-                if (NoteUtil.PitchClass(layout.WhiteMidi(i)) == 0) { startWhite = i; break; }
-            }
+            int startWhite = StartWhite(layout, play.VisibleWhiteRange());
             for (int i = 0; i < WhiteKeys.Length; i++)
             {
                 int w = startWhite + i;

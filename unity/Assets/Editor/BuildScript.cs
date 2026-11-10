@@ -48,10 +48,15 @@ namespace Piamo.EditorTools
             return null;
         }
 
+        /// <summary>ビルドした日（「おうちの かたへ」に 出す）。Resources/build_info.txt</summary>
+        public const string BuildInfoPath = "Assets/Resources/build_info.txt";
+
         static BuildReport Build(string output)
         {
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL)
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+            File.WriteAllText(BuildInfoPath, DateTime.Now.ToString("yyyy-MM-dd"));
+            AssetDatabase.ImportAsset(BuildInfoPath);
             var opts = new BuildPlayerOptions
             {
                 scenes = new[] { ScenePath },

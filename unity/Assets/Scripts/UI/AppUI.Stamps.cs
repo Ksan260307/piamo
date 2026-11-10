@@ -17,6 +17,13 @@ namespace Piamo
         public int PageIndex { get; private set; }
         int _pagesShown = 1;
         float _stampTime, _celebrateTimer;
+        // ページを ゆびで めくる
+        int _swipePointer = -1;
+        Vector2 _swipeStart;
+        float _swipeTime = -10f;
+        /// <summary>くわしい画面で 見ている スタンプ（なんこめ）。</summary>
+        int _detailCount;
+        float _messageHold;
         readonly Dictionary<int, Slot> _slots = new Dictionary<int, Slot>();
         readonly List<Confetto> _confetti = new List<Confetto>();
         Press _press;
@@ -68,6 +75,25 @@ namespace Piamo
             _pagePrev.clicked += () => TurnPage(-1);
             _pageNext.clicked += () => TurnPage(1);
             OnClick(_root.Q<Button>("detail-close"), () => _detail.AddToClassList("hidden"));
+            SetIcon("detail-prev-icon", "left");
+            SetIcon("detail-next-icon", "right");
+            OnClick(_root.Q<Button>("detail-prev"), () => ShowDetailAt(_detailCount - 1));
+            OnClick(_root.Q<Button>("detail-next"), () => ShowDetailAt(_detailCount + 1));
+            // ゆびで よこに すーっと うごかすと ページを めくる
+            _pages.RegisterCallback<PointerDownEvent>(e =>
+            {
+                _swipePointer = e.pointerId;
+                _swipeStart = e.position;
+            }, TrickleDown.TrickleDown);
+            _pages.RegisterCallback<PointerUpEvent>(e =>
+            {
+                if (e.pointerId != _swipePointer) return;
+                _swipePointer = -1;
+                Vector2 d = (Vector2)e.position - _swipeStart;
+                if (Mathf.Abs(d.x) < 90f || Mathf.Abs(d.x) < Mathf.Abs(d.y) * 1.4f) return;
+                _swipeTime = Time.unscaledTime;
+                TurnPage(d.x < 0f ? 1 : -1);
+            }, TrickleDown.TrickleDown);
             _detail.RegisterCallback<PointerDownEvent>(e => { if (e.target == _detail) _detail.AddToClassList("hidden"); });
             _pages.RegisterCallback<GeometryChangedEvent>(_ => LayoutPages());
             if (uiAssets != null && uiAssets.titleFont != null) _celebrateText.style.unityFontDefinition = FontDefinition.FromFont(uiAssets.titleFont);
@@ -256,7 +282,11 @@ namespace Piamo
         void RefreshStampTexts()
         {
             int total = Stamps.Total;
-            _stampCount.text = $"あつめた スタンプ {total}こ";
+            // でっかい スタンプまで あと いくつ
+            int toBig = StampBook.BigEvery - total % StampBook.BigEvery;
+            _stampCount.text = toBig == 1
+                ? $"あつめた スタンプ {total}こ ・ つぎは でっかい！"
+                : $"あつめた スタンプ {total}こ ・ でっかいまで あと {toBig}こ";
             int today = AppClock.Today();
             if (Stamps.PendingCount > 0)
             {
@@ -270,6 +300,7 @@ namespace Piamo
         void OnSlotClicked(Slot s)
         {
             if (_press != null) return;
+            if (Time.unscaledTime - _swipeTime < 0.3f) return;   // めくった ゆびの タップは かぞえない
             int day = Stamps.DayOf(s.count);
             if (day > 0)
             {
@@ -282,8 +313,14 @@ namespace Piamo
                 PressStamp(s);
                 return;
             }
-            // まだの ところ：ぷるぷる
+            // まだの ところ：ぷるぷる。あと いくつで ここに おせるか
             audioOut?.PlaySfx("oops", 0.5f, true);
+            int more = s.count - Stamps.Total - Stamps.PendingCount;
+            if (more > 0)
+            {
+                _stampMessage.text = $"あと {more}こ スタンプを あつめると、ここに おせるよ";
+                _messageHold = 2.5f;
+            }
             s.circle.style.rotate = new Rotate(8f);
             s.circle.schedule.Execute(() => s.circle.style.rotate = new Rotate(-6f)).StartingIn(80);
             s.circle.schedule.Execute(() => s.circle.style.rotate = new Rotate(0f)).StartingIn(160);
@@ -330,15 +367,30 @@ namespace Piamo
             if (_slots.TryGetValue(count, out var s)) OnSlotClicked(s);
         }
 
+        /// <summary>くわしい画面で となりの スタンプへ（おした ものだけ）。</summary>
+        void ShowDetailAt(int count)
+        {
+            int day = Stamps.DayOf(count);
+            if (day <= 0) return;
+            ShowDetail(count, day);
+        }
+
         void ShowDetail(int count, int day)
         {
+            _detailCount = count;
+            var prev = _root.Q<Button>("detail-prev");
+            var next = _root.Q<Button>("detail-next");
+            prev.SetEnabled(count > 1);
+            prev.style.opacity = count > 1 ? 1f : 0.3f;
+            next.SetEnabled(count < Stamps.Total);
+            next.style.opacity = count < Stamps.Total ? 1f : 0.3f;
             int design = StampBook.DesignFor(count);
             var entry = StampCatalog.Get(design);
             _root.Q<Label>("detail-name").text = entry != null ? entry.name : $"No.{design}";
             int book = StampBook.BookFor(count);
             string bookText = book > 1 ? $"{book}さつめ の " : "";
             string big = StampBook.IsBig(count) ? "でっかい スタンプ ・ " : "";
-            _root.Q<Label>("detail-info").text = $"{bookText}{(count - 1) % StampBook.Designs + 1}こめ ・ {big}No.{design}\n{AppClock.Long(day)}";
+            _root.Q<Label>("detail-info").text = $"{bookText}{(count - 1) % StampBook.Designs + 1}こめ ・ {big}No.{design}\n{AppClock.Long(day)}（{AppClock.Weekday(day)}）";
             var imgEl = _root.Q("detail-image");
             imgEl.style.backgroundImage = new StyleBackground(StyleKeyword.None);
             stampImages?.Request(design, tex => { if (tex != null) imgEl.style.backgroundImage = new StyleBackground(tex); });
@@ -349,6 +401,11 @@ namespace Piamo
         {
             if (Current != Page.Stamps) return;
             _stampTime += dt;
+            if (_messageHold > 0f)
+            {
+                _messageHold -= dt;
+                if (_messageHold <= 0f && _press == null) RefreshStampTexts();
+            }
             // つぎの ところを ぴかぴか
             foreach (var s in _slots.Values)
             {
@@ -368,7 +425,6 @@ namespace Piamo
                 _celebrate.style.opacity = _celebrateTimer < 0.4f ? _celebrateTimer / 0.4f : 1f;
                 if (_celebrateTimer <= 0f) _celebrate.AddToClassList("hidden");
             }
-            UpdateConfetti(dt);
         }
 
         void UpdatePress(float dt)
@@ -394,7 +450,7 @@ namespace Piamo
                 audioOut?.PlaySfx(big ? "stamp_big" : "stamp", 1f);
                 WebBridge.Vibrate(big ? 60 : 30);
                 var center = p.slot.circle.worldBound.center;
-                Burst(_stampFx.WorldToLocal(center), big ? 46 : 18, big ? 1.6f : 1f);
+                if (!SaveSystem.Settings.reduceMotion) Burst(_stampFx, _stampFx.WorldToLocal(center), big ? 46 : 18, big ? 1.6f : 1f);
                 if (big)
                 {
                     _celebrateText.text = $"でっかい スタンプ！\n{(p.slot.count - 1) % StampBook.Designs + 1}こめ おめでとう！";
@@ -417,15 +473,24 @@ namespace Piamo
                     if (_slots.TryGetValue(NextCount, out var nextSlot)) FillSlot(nextSlot);
                     else if (Stamps.PendingCount > 0) EnterStamps();
                     RefreshStampTexts();
+                    // おした スタンプの なまえ
+                    var entry = StampCatalog.Get(StampBook.DesignFor(p.slot.count));
+                    if (entry != null)
+                    {
+                        _stampMessage.text = Stamps.PendingCount > 0
+                            ? $"「{entry.name}」を おしたよ！ つぎも おせるよ"
+                            : $"「{entry.name}」を おしたよ！";
+                        _messageHold = 3f;
+                    }
                 }
             }
         }
 
-        void Burst(Vector2 at, int n, float power)
+        void Burst(VisualElement layer, Vector2 at, int n, float power)
         {
             for (int i = 0; i < n; i++)
             {
-                var e = UIParts.El("confetti", _stampFx);
+                var e = UIParts.El("confetti", layer);
                 e.style.backgroundColor = ConfettiColors[i % ConfettiColors.Length];
                 float a = Random.Range(0f, Mathf.PI * 2f);
                 float sp = Random.Range(380f, 900f) * power;
@@ -459,7 +524,9 @@ namespace Piamo
                 c.e.style.left = c.pos.x;
                 c.e.style.top = c.pos.y;
                 c.e.style.rotate = new Rotate(c.spin * c.t);
-                c.e.style.opacity = 1f - Mathf.SmoothStep(0.6f, 1f, c.t / c.life);
+                // Mathf.SmoothStep は「from から to へ」。はじめは こく、さいごの 4 わりで きえる
+                float u = c.t / c.life;
+                c.e.style.opacity = u < 0.6f ? 1f : Mathf.SmoothStep(1f, 0f, (u - 0.6f) / 0.4f);
             }
         }
     }

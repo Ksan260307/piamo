@@ -53,6 +53,8 @@ namespace Piamo
         public float bpm;
         public int meterTop, meterBottom;
         public PerformStyle style;
+        /// <summary>♭の 調（くろい けんばんを ♭ で よぶ。ヘ長調の ハッピーバースデー など）。</summary>
+        public bool flats;
         public readonly List<PerformNote> notes = new List<PerformNote>();
         public readonly List<ChordSpan> chords = new List<ChordSpan>();
         /// <summary>小節の はじまりの拍（弱起なら 0 小節目は みじかい）。</summary>
@@ -206,7 +208,7 @@ namespace Piamo
             Make("birthday", "ハッピーバースデー", PerformCategory.Event, "cat", "ヒル姉妹（1893）", 2, 96, "3/4", PerformStyle.Waltz,
                 "C4:0.75 C4:0.25 | D4 C4 F4 | E4:2 C4:0.75 C4:0.25 | D4 C4 G4 | F4:2 C4:0.75 C4:0.25 | C5 A4 F4 | E4 D4 Bb4:0.75 Bb4:0.25 | " +
                 "A4 F4 G4 | F4:2",
-                "R | F6 | C | Gm:1 C7:2 | F | F | C7:1 Bb:2 | F:2 C:1 | F"),
+                "R | F6 | C | Gm:1 C7:2 | F | F | C7:1 Bb:2 | F:2 C:1 | F", flats: true),
             Make("jingle", "ジングルベル", PerformCategory.Event, "penguin", "ピアポント（1857）", 2, 120, "4/4", PerformStyle.Pop,
                 "E4 E4 E4:2 | E4 E4 E4:2 | E4 G4 C4:1.5 D4:0.5 | E4:4 | F4 F4 F4:1.5 F4:0.5 | F4 E4 E4 E4:0.5 E4:0.5 | " +
                 "E4 D4 D4 E4 | D4:2 G4:2 | E4 E4 E4:2 | E4 E4 E4:2 | E4 G4 C4:1.5 D4:0.5 | E4:4 | F4 F4 F4:1.5 F4:0.5 | " +
@@ -249,9 +251,9 @@ namespace Piamo
         }
 
         public static PerformSong Make(string id, string title, PerformCategory category, string animal, string source, int stars, float bpm,
-            string meter, PerformStyle style, string melody, string chords)
+            string meter, PerformStyle style, string melody, string chords, bool flats = false)
         {
-            var s = new PerformSong { id = id, title = title, category = category, animal = animal, source = source, stars = stars, bpm = bpm, style = style };
+            var s = new PerformSong { id = id, title = title, category = category, animal = animal, source = source, stars = stars, bpm = bpm, style = style, flats = flats };
             var m = meter.Split('/');
             s.meterTop = int.Parse(m[0], CultureInfo.InvariantCulture);
             s.meterBottom = int.Parse(m[1], CultureInfo.InvariantCulture);

@@ -50,6 +50,8 @@
     #fill { width: 0%; height: 100%; border-radius: 8px; background: linear-gradient(90deg, #ff9fbe, #ffd45e); transition: width .2s; }
     #tip { font-size: 16px; font-weight: 700; color: #7a5644; min-height: 1.4em; text-align: center; padding: 0 20px; }
     #pct { margin-top: -12px; font-size: 14px; color: #a07c68; letter-spacing: .1em; font-weight: 700; }
+    #slow { display: none; margin-top: -8px; font-size: 14px; font-weight: 700; color: #a07c68; text-align: center; padding: 0 20px; }
+    #slow button { margin-top: 8px; padding: 6px 14px; border-radius: 14px; border: 2px solid #e8a0b8; background: #ffd6e2; color: #5a3b2e; font-weight: 700; cursor: pointer; }
     #error button { margin-left: 12px; padding: 6px 14px; border-radius: 14px; border: 2px solid #e8a0b8; background: #ffd6e2; color: #5a3b2e; font-weight: 700; cursor: pointer; }
     #error { display: none; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
       background: #fff; color: #6a3a2a; padding: 12px 20px; border-radius: 16px; font-size: 14px; z-index: 3; max-width: 80vw; box-shadow: 0 6px 20px rgba(0,0,0,.15); }
@@ -63,6 +65,7 @@
     <div id="bar"><div id="fill"></div></div>
     <div id="pct">0%</div>
     <div id="tip">けんばんを 10かい おすと、きょうの スタンプが もらえるよ</div>
+    <div id="slow"></div>
   </div>
   <div id="error"></div>
   <noscript><p style="text-align:center;margin-top:40vh">この アプリで あそぶには JavaScript を ゆうこうに してください。</p></noscript>
@@ -74,6 +77,10 @@
       "まよったら、こたえの けんばんが ひかるよ",
       "「せってい」で、けんばんの かずや おとを かえられるよ",
       "ゆびで すーっと なぞると、つづけて なるよ",
+      "「えんそう」では、ひかる けんばんを いっしょに ひけるよ",
+      "まねっこ と えんそうは、じょうずに ひけると ほしが もらえるよ",
+      "「じゆうに ひく」の ● で、ひいた きょくを ろくおん できるよ",
+      "3つの けんばんを いっしょに おすと、なにかが おきるよ",
     ];
     let tipIndex = 0;
     const tipEl = document.getElementById("tip");
@@ -84,6 +91,22 @@
     const loading = document.getElementById("loading");
     const errorBox = document.getElementById("error");
     const pct = document.getElementById("pct");
+    const slow = document.getElementById("slow");
+    // でんぱが よわくて じかんが かかるとき：まっていてね、それでも だめなら よみこみなおし
+    let loaded = false;
+    const slowTimer = setTimeout(() => {
+      if (loaded) return;
+      slow.style.display = "block";
+      slow.textContent = "じかんが かかっています。でんぱの よい ところで、もうすこし まってね";
+    }, 20000);
+    const retryTimer = setTimeout(() => {
+      if (loaded) return;
+      const b = document.createElement("button");
+      b.textContent = "もういちど よみこむ";
+      b.onclick = () => location.reload();
+      slow.appendChild(document.createElement("br"));
+      slow.appendChild(b);
+    }, 60000);
 
     function unityShowBanner(msg, type) {
       if (type === "error") showError(msg);
@@ -147,11 +170,15 @@
 
     const script = document.createElement("script");
     script.src = loaderUrl;
+    script.onerror = () => showError("よみこみに しっぱいしました。でんぱを たしかめて、もういちど よみこんでください。");
     script.onload = () => {
       createUnityInstance(canvas, config, (progress) => {
         fill.style.width = (progress * 100) + "%";
         pct.textContent = Math.round(progress * 100) + "%";
       }).then(() => {
+        loaded = true;
+        clearTimeout(slowTimer);
+        clearTimeout(retryTimer);
         clearInterval(tipTimer);
         loading.classList.add("done");
         setTimeout(() => loading.remove(), 800);

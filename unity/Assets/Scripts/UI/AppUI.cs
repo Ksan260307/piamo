@@ -82,6 +82,7 @@ namespace Piamo
             if (play != null)
             {
                 play.NotePlayed += OnNotePlayed;
+                play.NoteReleased += OnNoteReleased;
                 play.FramingChanged += OnFramingChanged;
                 play.ApplySettings(SaveSystem.Settings);
             }
@@ -150,6 +151,7 @@ namespace Piamo
                 case Page.Stamps: EnterStamps(); break;
             }
             UpdateInputActive();
+            UpdateKeepAwake();
         }
 
         public void OpenSettings()
@@ -158,6 +160,7 @@ namespace Piamo
             SettingsOpen = true;
             RefreshSettings();
             _settings.RemoveFromClassList("hidden");
+            ScrollSettingsForContext();
             audioOut?.PlaySfx("open", 0.8f, true);
             UpdateInputActive();
         }
@@ -260,6 +263,9 @@ namespace Piamo
             if (play != null) play.ApplySettings(EffectiveSettings());
             RefreshPlayAfterSettings();
             RefreshPerformAfterSettings();
+            // まねっこの とちゅうで オクターブを かえたら、その まとまりを あたらしい たかさで
+            if (Mimic != null && play != null) Mimic.SetTranspose(play.Transpose);
+            UpdateKeepAwake();
             RefreshSettings();
             if (Current == Page.Menu) RefreshMenu();
         }
@@ -351,7 +357,8 @@ namespace Piamo
         void Update()
         {
             if (!Ready) return;
-            float dt = Time.unscaledDeltaTime;
+            // タブを もどしたとき などに 時間が とんで、おてほんの音が いっせいに 鳴らないように
+            float dt = Mathf.Min(Time.unscaledDeltaTime, 0.1f);
             var kb = Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame) Back();
 
@@ -371,6 +378,9 @@ namespace Piamo
             UpdateMenu(dt);
             UpdatePlay(dt);
             UpdateStamps(dt);
+            UpdateConfetti(dt);
+            UpdateDesktopInput(dt);
+            UpdatePlayTime(dt);
         }
 
         void LateUpdate()
@@ -382,7 +392,15 @@ namespace Piamo
         /// <summary>ブラウザのタブを とじる・かくすとき（PiamoPage.jslib から）。</summary>
         public void OnPageHidden()
         {
+            _pageHidden = true;
             SaveSystem.Save();
+            // まねっこの おてほんの とちゅうなら、もどったら はじめから
+            Mimic?.Rewind();
+            if (_recorder != null && (_recorder.Recording || _recorder.Playing))
+            {
+                _recorder.StopRecording();
+                _recorder.StopPlayback();
+            }
             // えんそうの とちゅうなら 止めておく（もどってきたら ▶ で つづき）
             if (_performSong != null && Perform != null && (Perform.Current == PerformGame.State.CountIn || Perform.Current == PerformGame.State.Playing))
             {
@@ -392,9 +410,14 @@ namespace Piamo
             }
             play?.ReleaseAll();
             audioOut?.AllOff(false);
+            UpdateKeepAwake();
         }
 
-        public void OnPageVisible() { }
+        public void OnPageVisible()
+        {
+            _pageHidden = false;
+            UpdateKeepAwake();
+        }
 
         void OnApplicationPause(bool paused)
         {

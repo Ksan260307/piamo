@@ -164,7 +164,7 @@ namespace Piamo
             src.pitch = 1f;
             LastPitch = src.pitch;
             src.panStereo = Mathf.Clamp((note - 66) / 40f, -0.5f, 0.5f);
-            src.volume = voice.level * voice.gain * Volume;
+            src.volume = voice.level * voice.gain * Volume * Duck;
             src.Play();
         }
 
@@ -226,10 +226,21 @@ namespace Piamo
             return best;
         }
 
+        /// <summary>この数より 多く 鳴ると、ぜんぶを すこし小さくする（音が われないように）。</summary>
+        public const int DuckAbove = 6;
+
+        /// <summary>いま 鳴っている数に あわせた 音の大きさの かけ算（1 以下）。</summary>
+        public float Duck { get; private set; } = 1f;
+
         void Update()
         {
             if (_voices == null) return;
             float dt = Time.unscaledDeltaTime;
+            int playing = 0;
+            foreach (var v in _voices) if (v.note >= 0 && v.src.isPlaying) playing++;
+            float target = playing > DuckAbove ? Mathf.Sqrt(DuckAbove / (float)playing) : 1f;
+            // さげるのは すぐ、もどすのは ゆっくり
+            Duck = target < Duck ? target : Mathf.MoveTowards(Duck, target, dt * 0.8f);
             foreach (var v in _voices)
             {
                 if (v.note < 0) continue;
@@ -255,7 +266,7 @@ namespace Piamo
                         continue;
                     }
                 }
-                v.src.volume = v.level * v.gain * Volume;
+                v.src.volume = v.level * v.gain * Volume * Duck;
             }
         }
 

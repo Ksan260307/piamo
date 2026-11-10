@@ -30,6 +30,16 @@ namespace Piamo
         /// <summary>「2026ねん 10がつ 31にち」</summary>
         public static string Long(int day) => day <= 0 ? "" : $"{Year(day)}ねん {Month(day)}がつ {DayOfMonth(day)}にち";
 
+        static readonly string[] Weekdays = { "にちようび", "げつようび", "かようび", "すいようび", "もくようび", "きんようび", "どようび" };
+
+        /// <summary>「どようび」</summary>
+        public static string Weekday(int day)
+        {
+            if (day <= 0) return "";
+            try { return Weekdays[(int)new DateTime(Year(day), Month(day), DayOfMonth(day)).DayOfWeek]; }
+            catch (ArgumentException) { return ""; }
+        }
+
         /// <summary>日付の数をもとにした、次の日（テスト用）。</summary>
         public static int AddDays(int day, int add)
         {

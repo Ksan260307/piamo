@@ -46,14 +46,27 @@ namespace Piamo
         public bool performMelody = true;
         /// <summary>ばんそう（ドミソの おと）を ならす。</summary>
         public bool performAccomp = true;
+        /// <summary>「いっしょに」の あたりの はば（0 ひろい・1 ふつう）。</summary>
+        public int performWindow = 0;
 
         // がめん
         public bool noteEffects = true;
         public bool uiSounds = true;
+        /// <summary>ひいている あいだ、画面を くらく しない（スリープ しない）。</summary>
+        public bool keepAwake = true;
+        /// <summary>スマホを ぶるっと ふるわせる（正解・スタンプ）。</summary>
+        public bool vibrate = true;
+        /// <summary>うごきを すくなく（どうぶつが ゆれない・紙ふぶき なし）。</summary>
+        public bool reduceMotion = false;
+        /// <summary>パソコンの キー（A S D F…）を けんばんに かく。</summary>
+        public bool pcKeyLabels = false;
+        /// <summary>あそぶ じかんの めやす（ふん。0 = なし）。すぎると「きゅうけい しよう」。</summary>
+        public int playLimit = 0;
         /// <summary>はいけい（Themes の番号）。</summary>
         public int theme = 0;
 
         public static readonly int[] HintChoices = { 0, 5, 10, 15, 20 };
+        public static readonly int[] PlayLimitChoices = { 0, 15, 30, 60 };
 
         public void Clamp()
         {
@@ -69,6 +82,8 @@ namespace Piamo
             hintSeconds = Mathf.Clamp(hintSeconds, 0, 60);
             performMode = Mathf.Clamp(performMode, 0, 2);
             performSpeed = Mathf.Clamp(performSpeed, 0, 2);
+            performWindow = Mathf.Clamp(performWindow, 0, 1);
+            if (System.Array.IndexOf(PlayLimitChoices, playLimit) < 0) playLimit = 0;
             theme = Mathf.Clamp(theme, 0, Themes.Count - 1);
         }
 
@@ -82,6 +97,12 @@ namespace Piamo
 
         /// <summary>えんそうの はやさの かけ算（ゆっくり・ふつう・はやい）。</summary>
         public float PerformTempo => performSpeed == 0 ? 0.75f : performSpeed == 2 ? 1.2f : 1f;
+
+        /// <summary>まねっこの おてほんの はやさの かけ算。</summary>
+        public float MimicTempo => mimicSpeed == 0 ? 0.72f : mimicSpeed == 2 ? 1.3f : 1f;
+
+        /// <summary>「いっしょに」の あたりの はばの かけ算。</summary>
+        public float PerformWindowScale => performWindow == 0 ? 1.4f : 1f;
     }
 
     /// <summary>ピアノのケースの いろ。</summary>

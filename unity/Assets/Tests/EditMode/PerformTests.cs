@@ -388,7 +388,98 @@ namespace Piamo.Tests
             Assert.AreEqual(PerformGame.PressResult.Ignored, g.Press(60));
             g.SetPaused(false);
             Run(g, 0.5f);
+            Assert.AreEqual(beat, g.Beat, 1e-5f, "つづきの まえに 3・2・1");
+            Run(g, 1.5f);
             Assert.Greater(g.Beat, beat);
+        }
+
+        [Test]
+        public void ResumingCountsThreeTwoOne()
+        {
+            var g = new PerformGame();
+            var ticks = new List<int>();
+            g.Start(Simple, PerformGame.Mode.Along, 1f, false, true);
+            Run(g, 2.5f);
+            g.CountTick += n => ticks.Add(n);
+            g.SetPaused(true);
+            g.SetPaused(false);
+            Assert.IsTrue(g.Resuming);
+            Assert.AreEqual(PerformGame.PressResult.Ignored, g.Press(62), "カウント中は かぞえない");
+            float beat = g.Beat;
+            Run(g, 1.45f);
+            Assert.AreEqual(beat, g.Beat, 1e-5f);
+            CollectionAssert.AreEqual(new[] { 3, 2, 1 }, ticks);
+            Run(g, 0.2f);
+            Assert.IsFalse(g.Resuming);
+            Assert.Greater(g.Beat, beat);
+            var step = new PerformGame();
+            step.Start(Simple, PerformGame.Mode.Step, 1f, false, true);
+            step.SetPaused(true);
+            step.SetPaused(false);
+            Assert.IsFalse(step.Resuming, "ひとつずつは まってくれるので カウントなし");
+        }
+
+        [Test]
+        public void ComboGrowsAndBreaksOnAMiss()
+        {
+            var g = new PerformGame();
+            var song = Simple;
+            g.Start(song, PerformGame.Mode.Along, 1f, false, true);
+            int next = 0;
+            for (int k = 0; k < 800 && g.Current != PerformGame.State.Finished; k++)
+            {
+                g.Update(0.01f);
+                // 4 つめ（ファ）だけ ひかない
+                if (next < song.notes.Count && g.Beat >= song.notes[next].on)
+                {
+                    if (next != 3) g.Press(song.notes[next].midi);
+                    next++;
+                }
+                if (next == 3 && g.Grades[2] != PerformGame.Grade.None) Assert.AreEqual(3, g.Combo);
+            }
+            Assert.AreEqual(3, g.BestCombo);
+            Assert.AreEqual(2, g.Combo, "ミスで 0 に もどって、また 2 つ");
+        }
+
+        [Test]
+        public void StepWaitGrowsUntilTheRightKey()
+        {
+            var g = new PerformGame();
+            g.Start(Simple, PerformGame.Mode.Step, 1f, false, true);
+            Run(g, 3f);
+            Assert.AreEqual(3f, g.StepWait, 0.05f);
+            g.Press(71);
+            Assert.Greater(g.StepWait, 2.9f, "ちがう音では もどらない");
+            g.Press(60);
+            Assert.AreEqual(0f, g.StepWait, 1e-5f);
+        }
+
+        [Test]
+        public void WiderWindowAcceptsLaterPresses()
+        {
+            foreach (var (scale, hit) in new[] { (1f, false), (1.5f, true) })
+            {
+                var g = new PerformGame { WindowScale = scale };
+                g.Start(Simple, PerformGame.Mode.Along, 1f, false, true);
+                Run(g, 2f + 0.38f);   // ド（0.5 びょう）を 0.38 びょう おくれて
+                Assert.AreEqual(hit ? PerformGame.PressResult.Correct : PerformGame.PressResult.Wrong, g.Press(60), $"はば {scale}");
+            }
+        }
+
+        [Test]
+        public void ListeningPlayersAreCheeredButNotScored()
+        {
+            var g = new PerformGame();
+            var judged = new List<PerformGame.Grade>();
+            g.Judged += (i, gr) => judged.Add(gr);
+            g.Start(Simple, PerformGame.Mode.Listen, 1f, false, true);
+            Run(g, 2.02f);
+            Assert.AreEqual(PerformGame.PressResult.Correct, g.Press(60), "きく でも いっしょに おすと ほめる");
+            Run(g, 6f);
+            Assert.AreEqual(PerformGame.State.Finished, g.Current);
+            CollectionAssert.AreEqual(new[] { PerformGame.Grade.Perfect }, judged, "ミスは つけない");
+            Assert.AreEqual(0, g.Missed);
+            Assert.AreEqual(0, g.Stars);
         }
 
         [Test]

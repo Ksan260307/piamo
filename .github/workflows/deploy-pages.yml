@@ -52,6 +52,8 @@ jobs:
           python-version: "3.11"
       - run: pip install numpy pillow fonttools
       - run: python -m unittest discover -s tools/tests -v
+      # 曲の データの けんさ（まちがいが あれば その曲・小節を ::error:: で 出す）
+      - run: python tools/check_songs.py
 
   test:
     name: Unit & integration tests (Unity)

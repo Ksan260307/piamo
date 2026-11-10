@@ -14,17 +14,33 @@ namespace Piamo
         public static float MimicTimeScale = 1f;
 
         VisualElement _kbArea, _labelsLayer, _fxLayer, _freePanel, _mimicPanel, _songPicker, _mimicGame, _nav, _navTrack, _navWindow, _earnBanner, _teacher, _mimicDots, _meterDots, _hintArrow, _freeMascot;
-        Button _tabFree, _tabMimic;
-        Label _freeBubble, _mimicBubble, _mimicTitle, _meterText, _instChipLabel, _replayLabel;
+        VisualElement _mimicStars, _mimicMeter, _nowDot;
+        Button _tabFree, _tabMimic, _mimicNext;
+        Label _freeBubble, _mimicBubble, _mimicTitle, _meterText, _instChipLabel, _replayLabel, _mimicSpeedLabel;
         ScrollView _songList;
         readonly Dictionary<int, Label> _keyLabels = new Dictionary<int, Label>();
+        /// <summary>けんばんを おした 時（ラベルを ぽよんと はねさせる）。</summary>
+        readonly Dictionary<int, float> _labelPressedAt = new Dictionary<int, float>();
         readonly List<VisualElement> _navKeys = new List<VisualElement>();
         int _labelsBuiltFor = -1;
         LabelMode _labelsMode = (LabelMode)(-1);
-        float _bubbleTimer, _teacherBounce, _teacherShake, _freeTimer;
+        float _bubbleTimer, _teacherBounce, _teacherShake, _freeTimer, _earnTimer, _mimicLoadWait;
         int _freeMessage;
         bool _navDragging;
+        /// <summary>さいごに あそんだ モード（アプリを ひらいて はじめて ピアノの画面に きたとき もどす。-1 = もう もどした）。</summary>
+        int _restoreMode = -1;
         int _navPointer = -1;
+
+        /// <summary>テスト用：まねっこの ドットの ようす（"on" / "demo" / "now" / ""）。</summary>
+        public string MimicDotState(int i)
+        {
+            if (_mimicDots == null || i >= _mimicDots.childCount) return null;
+            var d = _mimicDots[i];
+            return d.ClassListContains("dot--on") ? "on" : d.ClassListContains("dot--demo") ? "demo" : d.ClassListContains("dot--now") ? "now" : "";
+        }
+
+        public string MimicBubbleText => _mimicBubble?.text;
+        public string FreeBubbleText => _freeBubble?.text;
 
         // おんぷ（♪）の とびだす こうか
         class Fx
@@ -44,9 +60,14 @@ namespace Piamo
             "すきに ひいてね♪",
             "ゆびで すーっと なぞると、つづけて なるよ",
             "なんぼんの ゆびでも いっしょに おせるよ",
+            "● を おすと、ひいた きょくを ろくおん できるよ",
+            "「ペダル」を おすと、おとが ながく のびるよ",
+            "3つの けんばんを いっしょに おすと…？",
+            "どうぶつを タップしてみてね",
             "「まねっこ」で きょくを ひいてみよう！",
             "「えんそう」で、ひかる けんばんを いっしょに ひこう！",
         };
+        static readonly string[] SpeedLabels = { "ゆっくり", "ふつう", "はやい" };
 
         static readonly Dictionary<string, string> InstrumentMascot = new Dictionary<string, string>
         {
@@ -56,6 +77,7 @@ namespace Piamo
 
         void BuildPlay()
         {
+            _restoreMode = SaveSystem.Data.lastPlayMode;
             _kbArea = _root.Q("keyboard-area");
             _labelsLayer = _root.Q("key-labels");
             _fxLayer = _root.Q("fx-layer");
@@ -69,6 +91,7 @@ namespace Piamo
             _earnBanner = _root.Q("earn-banner");
             _teacher = _root.Q("teacher");
             _mimicDots = _root.Q("mimic-dots");
+            _mimicMeter = _root.Q("mimic-meter");
             _meterDots = _root.Q("stamp-meter-dots");
             _freeMascot = _root.Q("free-mascot");
             _freeBubble = _root.Q<Label>("free-bubble");
@@ -77,6 +100,8 @@ namespace Piamo
             _meterText = _root.Q<Label>("stamp-meter-text");
             _instChipLabel = _root.Q<Label>("inst-chip-label");
             _replayLabel = _root.Q<Label>("mimic-replay-label");
+            _mimicSpeedLabel = _root.Q<Label>("mimic-speed-label");
+            _mimicNext = _root.Q<Button>("mimic-next");
             _songList = _root.Q<ScrollView>("song-list");
             _tabFree = _root.Q<Button>("tab-free");
             _tabMimic = _root.Q<Button>("tab-mimic");
@@ -87,6 +112,8 @@ namespace Piamo
             SetIcon("nav-right-icon", "right");
             SetIcon("mimic-replay-icon", "ear");
             SetIcon("mimic-change-icon", "songs");
+            SetIcon("mimic-next-icon", "next");
+            SetIcon("mimic-speed-icon", "speed");
             SetIcon("stamp-meter-icon", "stamp");
             SetIcon("earn-icon", "stamp");
 
@@ -99,6 +126,9 @@ namespace Piamo
             OnClick(_root.Q<Button>("inst-chip"), OpenInstrumentPopup);
             OnClick(_root.Q<Button>("mimic-replay"), OnReplayPressed);
             OnClick(_root.Q<Button>("mimic-change"), StopSong);
+            OnClick(_mimicNext, StartNextMimicSong);
+            OnClick(_root.Q<Button>("mimic-speed"), CycleMimicSpeed);
+            OnClick(_root.Q<Button>("mimic-inst"), OpenInstrumentPopup);
             OnClick(_root.Q<Button>("earn-go"), () =>
             {
                 _earnBanner.AddToClassList("hidden");
@@ -107,6 +137,8 @@ namespace Piamo
             OnClick(_root.Q<Button>("earn-later"), () => _earnBanner.AddToClassList("hidden"));
             OnClick(_root.Q<Button>("inst-popup-close"), CloseInstrumentPopup);
             _instPopup.RegisterCallback<PointerDownEvent>(e => { if (e.target == _instPopup) CloseInstrumentPopup(); });
+            // 先生を タップすると、もういちど きける
+            _teacher.RegisterCallback<ClickEvent>(_ => TapTeacher());
 
             // 鍵盤のスクロール（小さな鍵盤の帯をドラッグ）
             _navTrack.RegisterCallback<PointerDownEvent>(e =>
@@ -125,7 +157,7 @@ namespace Piamo
             });
             _kbArea.RegisterCallback<GeometryChangedEvent>(_ => UpdateArea());
 
-            for (int i = 0; i < 10; i++) UIParts.El("meter-dot", _meterDots);
+            for (int i = 0; i < StampBook.PlaysForStamp; i++) UIParts.El("meter-dot", _meterDots);
             for (int i = 0; i < FxPool; i++)
             {
                 var e = UIParts.El("fx hidden", _fxLayer);
@@ -134,10 +166,16 @@ namespace Piamo
             _hintArrow = UIParts.El("hint-arrow hidden", _labelsLayer);
             UIParts.SetIcon(_hintArrow, Icon("hint"));
 
+            // まねっこが おわったときの ほし（ドットの かわりに 出す）
+            _mimicStars = UIParts.El("mimic-stars hidden", _mimicDots.parent);
+            for (int i = 0; i < 3; i++) UIParts.SetIcon(UIParts.El("result-star mimic-star", _mimicStars), Icon("star"));
+            BuildMiniMeter(_mimicMeter);
+
             HideScrollers(_songList);
             HideScrollers(_root.Q<ScrollView>("inst-popup-scroll"));
             BuildSongList();
             BuildInstrumentPopup();
+            BuildFree();
             BuildPerform();
             SetMode(PlayMode.Free);
         }
@@ -150,6 +188,13 @@ namespace Piamo
             if (play != null) play.ApplySettings(EffectiveSettings());
             RefreshPlayAfterSettings();
             UpdateStampMeter();
+            // さいごに あそんだ モードから（アプリを ひらいて はじめの 1 かいだけ）
+            if (_restoreMode >= 0)
+            {
+                var last = (PlayMode)Mathf.Clamp(_restoreMode, 0, 2);
+                _restoreMode = -1;
+                if (last != Mode) SetMode(last);
+            }
             OnLayoutPlay();
         }
 
@@ -157,6 +202,7 @@ namespace Piamo
         {
             if (Mimic != null && Mimic.Current != MimicGame.State.Idle) StopSong();
             if (_performSong != null) StopPerform();
+            StopRecorder();
             play?.ReleaseAll();
             input?.ReleaseAll();
             audioOut?.AllOff(false);
@@ -168,7 +214,10 @@ namespace Piamo
             // まねっこ と えんそう は いっしょに うごかない（おてほんの音・ひかる けんばん・けんばんの かずが ぶつからないように、ほかの モードは止める）
             if (m != PlayMode.Mimic && Mimic != null && Mimic.Current != MimicGame.State.Idle) StopSong();
             if (m != PlayMode.Perform && _performSong != null) StopPerform();
+            if (m != PlayMode.Free) StopRecorder();
             Mode = m;
+            // おぼえるのは、まえの モードに もどしたあと（はじめの くみたての「じゆう」で うわがき しない）
+            if (_restoreMode < 0) SaveSystem.Data.lastPlayMode = (int)m;
             _tabFree.EnableInClassList("tab--on", m == PlayMode.Free);
             _tabMimic.EnableInClassList("tab--on", m == PlayMode.Mimic);
             _tabPerform.EnableInClassList("tab--on", m == PlayMode.Perform);
@@ -187,11 +236,17 @@ namespace Piamo
             var s = SaveSystem.Settings;
             var info = InstrumentCatalog.Get(s.instrument);
             _instChipLabel.text = info.label;
-            UIParts.SetIcon(_root.Q("inst-chip-icon"), Icon("inst_" + info.id));
+            var instIcon = Icon("inst_" + info.id);
+            UIParts.SetIcon(_root.Q("inst-chip-icon"), instIcon);
+            UIParts.SetIcon(_root.Q("mimic-inst-icon"), instIcon);
+            UIParts.SetIcon(_root.Q("perform-inst-icon"), instIcon);
             UIParts.SetIcon(_freeMascot, Character(InstrumentMascot.TryGetValue(info.id, out var a) ? a : "cat"));
+            _mimicSpeedLabel.text = SpeedLabels[s.mimicSpeed];
+            Mimic?.SetTempo(s.MimicTempo);
             BuildKeyLabels(true);
             OnLayoutPlay();
             RefreshInstrumentPopup();
+            RefreshFreeControls();
         }
 
         void OnLayoutPlay()
@@ -275,6 +330,7 @@ namespace Piamo
             _labelsMode = mode;
             foreach (var l in _keyLabels.Values) l.RemoveFromHierarchy();
             _keyLabels.Clear();
+            _pcSig = int.MinValue;   // パソコンの キーの もじも かきなおす
             if (mode == LabelMode.None) return;
             foreach (var key in layout.Keys)
             {
@@ -282,6 +338,8 @@ namespace Piamo
                 var l = UIParts.Text(NoteUtil.Name(key.midi, mode), "key-label", _labelsLayer);
                 l.style.backgroundColor = NoteUtil.NoteColor(key.midi);
                 if (mode == LabelMode.ColorOnly) l.text = "";
+                // まんなかの ド（ここから はじめる めじるし）
+                if (key.midi == NoteUtil.MiddleC) l.AddToClassList("key-label--c4");
                 _keyLabels[key.midi] = l;
             }
             _hintArrow.BringToFront();
@@ -294,6 +352,8 @@ namespace Piamo
             float keyUnits = play.Framing.keyPx / k;
             float size = Mathf.Clamp(keyUnits * 0.6f, 34f, 112f);
             float w = _labelsLayer.layout.width;
+            float now = Time.unscaledTime;
+            bool still = SaveSystem.Settings.reduceMotion;
             foreach (var kv in _keyLabels)
             {
                 var l = kv.Value;
@@ -307,7 +367,13 @@ namespace Piamo
                 l.style.left = lp.x - size / 2f;
                 l.style.top = lp.y - size / 2f;
                 l.style.fontSize = size * (l.text.Length >= 2 ? 0.36f : 0.5f);
+                // おした けんばんの ラベルは ぽよんと はねる
+                float pop = 1f;
+                if (!still && _labelPressedAt.TryGetValue(kv.Key, out float at) && now - at < 0.25f)
+                    pop = 1f + 0.28f * Mathf.Sin((now - at) / 0.25f * Mathf.PI);
+                l.style.scale = new Scale(new Vector2(pop, pop));
             }
+            UpdatePcLetters();
             int hint = play.view.HintKey;
             if (hint >= 0)
             {
@@ -325,7 +391,7 @@ namespace Piamo
         }
 
         // ------------------------------------------------------------------
-        // 鍵盤が おされた
+        // 鍵盤が おされた・はなされた
 
         void OnNotePlayed(int midi)
         {
@@ -335,30 +401,22 @@ namespace Piamo
                 SaveSystem.Save();
                 audioOut?.PlaySfx("earn", 0.9f);
                 _earnBanner.RemoveFromClassList("hidden");
+                _earnTimer = 8f;
+                WebBridge.Vibrate(40);
             }
             UpdateStampMeter();
             if (SaveSystem.Settings.noteEffects) SpawnNote(midi);
-            if (Mode == PlayMode.Perform && Perform != null && _performSong != null)
-            {
-                var pr = Perform.Press(midi);
-                if (pr == PerformGame.PressResult.Wrong && Perform.CurrentMode == PerformGame.Mode.Step)
-                    SetPerformBubble("ひかっている けんばんを おしてね");
-            }
-            if (Mode == PlayMode.Mimic && Mimic != null && Mimic.Current == MimicGame.State.Listen)
-            {
-                var r = Mimic.Press(midi);
-                if (r == MimicGame.PressResult.Correct)
-                {
-                    _teacherBounce = 0.3f;
-                    SetBubble("そう そう！ その ちょうし♪");
-                    RefreshDots();
-                }
-                else if (r == MimicGame.PressResult.Wrong)
-                {
-                    _teacherShake = 0.4f;
-                    SetBubble(Mimic.HintActive ? "ひかっている けんばんを おしてね" : "おしい！ もういちど きいてみる？");
-                }
-            }
+            _labelPressedAt[midi] = Time.unscaledTime;
+            FreeNotePlayed(midi);
+            if (Mode == PlayMode.Perform && Perform != null && _performSong != null) PerformNotePlayed(midi);
+            if (Mode == PlayMode.Mimic && Mimic != null) MimicNotePlayed(midi);
+        }
+
+        void OnNoteReleased(int midi)
+        {
+            _recorder?.Add(midi, false);
+            _lastReleased = midi;
+            _lastReleaseFrame = Time.frameCount;
         }
 
         void UpdateStampMeter()
@@ -368,9 +426,12 @@ namespace Piamo
             bool got = Stamps.HasStampFor(today);
             if (got) _meterText.text = Stamps.PendingCount > 0 ? "スタンプが おせるよ！" : "きょうの スタンプ もらったよ";
             else _meterText.text = $"スタンプまで あと {left}かい";
-            int filled = got ? 10 : StampBook.PlaysForStamp - left;
+            int filled = got ? StampBook.PlaysForStamp : StampBook.PlaysForStamp - left;
             for (int i = 0; i < _meterDots.childCount; i++) _meterDots[i].EnableInClassList("meter-dot--on", i < filled);
             _meterDots.EnableInClassList("hidden", got);
+            // まねっこ・えんそうの 小さな メーター
+            RefreshMiniMeter(_mimicMeter, left, got);
+            RefreshMiniMeter(_performMeter, left, got);
         }
 
         void SpawnNote(int midi)
@@ -415,7 +476,8 @@ namespace Piamo
                 f.e.style.top = f.pos.y - f.size / 2f;
                 f.e.style.scale = new Scale(new Vector2(pop, pop));
                 f.e.style.rotate = new Rotate(f.spin * f.t);
-                f.e.style.opacity = 1f - Mathf.SmoothStep(0.55f, 1f, u);
+                // Mathf.SmoothStep は「from から to へ」。さいごの 4 わり ちょっとで きえる
+                f.e.style.opacity = u < 0.55f ? 1f : Mathf.SmoothStep(1f, 0f, (u - 0.55f) / 0.45f);
             }
         }
 
@@ -464,8 +526,8 @@ namespace Piamo
             SaveSystem.Settings.instrument = id;
             SaveSystem.ApplySettings();
             var info = InstrumentCatalog.Get(id);
-            _freeBubble.text = $"{info.label}の おとだよ♪";
-            _freeTimer = 0f;
+            SetFreeBubble($"{info.label}の おとだよ♪");
+            if (Mode == PlayMode.Mimic && Mimic != null) SetBubble($"{info.label}の おとで ひこう！");
             if (audioOut != null)
             {
                 int c = NoteUtil.MiddleC + 12 * SaveSystem.Settings.octaveShift;
@@ -473,7 +535,9 @@ namespace Piamo
             }
         }
 
-        System.Collections.IEnumerator Preview(int[] notes)
+        System.Collections.IEnumerator Preview(int[] notes) => Preview(notes, 0.16f);
+
+        System.Collections.IEnumerator Preview(int[] notes, float step)
         {
             // WebGL では、えらんだ楽器の音を ブラウザが ほどきおわるまで 鳴らないので、まってから（3 びょうまで）
             float wait = 0f;
@@ -485,7 +549,7 @@ namespace Piamo
             foreach (int n in notes)
             {
                 audioOut.NoteOn(n, 0.8f);
-                yield return new WaitForSecondsRealtime(0.16f);
+                yield return new WaitForSecondsRealtime(step);
                 audioOut.NoteOff(n);
             }
         }
@@ -493,7 +557,7 @@ namespace Piamo
         // ------------------------------------------------------------------
         // まねっこ
 
-        readonly List<(Button b, string id, VisualElement star)> _songCards = new List<(Button, string, VisualElement)>();
+        readonly List<(Button b, SongDef song, VisualElement stars)> _songCards = new List<(Button, SongDef, VisualElement)>();
 
         void BuildSongList()
         {
@@ -502,10 +566,12 @@ namespace Piamo
                 var s = song;
                 string color = s.random ? "purple" : s.exercise ? "green" : "white";
                 var b = UIParts.Candy(s.title, color, Character(s.animal), () => StartSong(s), _songList, "song-card");
+                b.name = "mimic-song-" + s.id;
                 TitleSize(b, s.title);
-                var star = UIParts.El("icon song-card__star hidden", b);
-                UIParts.SetIcon(star, Icon("star"));
-                _songCards.Add((b, s.id, star));
+                // まちがいの 少なさの ほし（1〜3）
+                var stars = UIParts.El("song-card__stars hidden", b);
+                for (int i = 0; i < 3; i++) UIParts.SetIcon(UIParts.El("mini-star", stars), Icon("star"));
+                _songCards.Add((b, s, stars));
             }
         }
 
@@ -520,25 +586,48 @@ namespace Piamo
         {
             _songPicker.RemoveFromClassList("hidden");
             _mimicGame.AddToClassList("hidden");
-            foreach (var (b, id, star) in _songCards)
-                star.EnableInClassList("hidden", !SaveSystem.Data.clearedSongs.Contains(id));
+            string last = SaveSystem.Data.lastMimicSong;
+            Button lastCard = null;
+            foreach (var (b, song, stars) in _songCards)
+            {
+                int n = SaveSystem.Data.MimicStarsFor(song.id);
+                stars.EnableInClassList("hidden", n <= 0);
+                for (int i = 0; i < stars.childCount; i++) stars[i].style.display = i < n ? DisplayStyle.Flex : DisplayStyle.None;
+                bool isLast = song.id == last;
+                b.EnableInClassList("song-card--last", isLast);
+                if (isLast) lastCard = b;
+            }
+            ScrollIntoView(_songList, lastCard);
+        }
+
+        /// <summary>さいごに えらんだ 曲が 見えるように（ならべおわってから）。</summary>
+        static void ScrollIntoView(ScrollView list, VisualElement card)
+        {
+            if (list == null || card == null) return;
+            list.schedule.Execute(() =>
+            {
+                if (card.layout.height > 1f) list.ScrollTo(card);
+            }).ExecuteLater(60);
         }
 
         public void StartSong(SongDef song)
         {
             var s = SaveSystem.Settings;
+            Mimic?.Stop();
+            play?.ReleaseAll();
             Mimic = new MimicGame(System.Environment.TickCount);
             Mimic.DemoNoteOn += (m, d) =>
             {
                 play.EnsureVisible(m, m);
                 play.DemoDown(m, SaveSystem.Settings.demoLights);
+                RefreshDots();
             };
             Mimic.DemoNoteOff += m => play.DemoUp(m);
             Mimic.StateChanged += OnMimicState;
             Mimic.HintShown += m =>
             {
                 audioOut?.PlaySfx("hint", 0.7f);
-                SetBubble("ひかっている けんばんを おしてね");
+                SetBubble(HintText(m));
                 play.EnsureVisible(m, m);
             };
             Mimic.RoundCleared += () =>
@@ -549,13 +638,17 @@ namespace Piamo
                 RefreshDots();
             };
             Mimic.SongFinished += OnSongFinished;
-            float tempo = s.mimicSpeed == 0 ? 0.72f : s.mimicSpeed == 2 ? 1.3f : 1f;
             _songPicker.AddToClassList("hidden");
             _mimicGame.RemoveFromClassList("hidden");
+            _mimicNext.AddToClassList("hidden");
+            _mimicStars.AddToClassList("hidden");
+            _mimicDots.RemoveFromClassList("hidden");
             _mimicTitle.text = song.title;
             UIParts.SetIcon(_teacher, Character(song.animal));
             _replayLabel.text = "もういちど きく";
-            Mimic.Start(song, s.mimicLength, tempo, s.hintSeconds, play.Transpose);
+            _mimicLoadWait = 0f;
+            SaveSystem.Data.lastMimicSong = song.id;
+            Mimic.Start(song, s.mimicLength, s.MimicTempo, s.hintSeconds, play.Transpose);
             RefreshDots();
         }
 
@@ -563,9 +656,17 @@ namespace Piamo
         {
             Mimic?.Stop();
             Mimic = null;
+            _nowDot = null;
             play?.ReleaseAll();
             play?.view.SetHint(-1);
             ShowPicker();
+        }
+
+        void StartNextMimicSong()
+        {
+            if (Mimic == null) return;
+            int i = Songs.All.IndexOf(Mimic.Song);
+            StartSong(Songs.All[(i + 1) % Songs.All.Count]);
         }
 
         void OnReplayPressed()
@@ -581,6 +682,54 @@ namespace Piamo
             Mimic.ReplayDemo();
         }
 
+        void TapTeacher()
+        {
+            if (Mimic == null) return;
+            _teacherBounce = 0.45f;
+            if (Mimic.Current == MimicGame.State.Listen || Mimic.Current == MimicGame.State.Demo)
+            {
+                Click();
+                play.view.SetHint(-1);
+                Mimic.ReplayDemo();
+            }
+        }
+
+        void CycleMimicSpeed()
+        {
+            var s = SaveSystem.Settings;
+            s.mimicSpeed = (s.mimicSpeed + 1) % 3;
+            SaveSystem.ApplySettings();
+            if (Mimic != null) SetBubble($"はやさ：{SpeedLabels[s.mimicSpeed]}（つぎの おてほんから）");
+        }
+
+        /// <summary>ヒントの ことば（おんめいを かく せっていなら、おとの なまえも）。</summary>
+        static string HintText(int midi)
+        {
+            var mode = SaveSystem.Settings.labels;
+            bool named = mode == LabelMode.Katakana || mode == LabelMode.Hiragana || mode == LabelMode.Letters;
+            return named && midi >= 0 ? $"ひかっている「{NoteUtil.Name(midi, mode)}」を おしてね" : "ひかっている けんばんを おしてね";
+        }
+
+        void MimicNotePlayed(int midi)
+        {
+            // おてほんの とちゅうでも、正しい はじめの音なら すぐに まねする番（MimicGame が きめる）
+            var r = Mimic.Press(midi);
+            if (r == MimicGame.PressResult.Correct)
+            {
+                _teacherBounce = 0.3f;
+                SetBubble("そう そう！ その ちょうし♪");
+                RefreshDots();
+            }
+            else if (r == MimicGame.PressResult.Wrong)
+            {
+                _teacherShake = 0.4f;
+                // まちがえた けんばんは はいいろに ひかる（せめない いろ）
+                play.view.SetPressed(midi, true, WrongGlow);
+                SetBubble(Mimic.HintActive ? HintText(Mimic.Expected) : Mimic.WrongStreak >= 2 ? "おしい！ もういちど きいてみる？" : "おしい！");
+                RefreshDots();
+            }
+        }
+
         void OnMimicState(MimicGame.State st)
         {
             switch (st)
@@ -589,36 +738,56 @@ namespace Piamo
                     SetBubble("よく きいてね♪");
                     audioOut?.PlaySfx("listen", 0.6f);
                     RefreshDots();
-                    var r = Mimic.CurrentRound;
-                    if (r != null)
-                    {
-                        int lo = 999, hi = -1;
-                        foreach (var n in r) if (!n.IsRest) { lo = Mathf.Min(lo, n.midi + play.Transpose); hi = Mathf.Max(hi, n.midi + play.Transpose); }
-                        if (hi >= 0) play.EnsureVisible(lo, hi);
-                    }
+                    ShowMimicRound();
                     break;
                 case MimicGame.State.Demo:
                     SetBubble("♪ ♪ ♪");
+                    RefreshDots();
                     break;
                 case MimicGame.State.Listen:
                     SetBubble("まねして ひいてね！");
                     RefreshDots();
+                    ShowMimicRound();
                     break;
             }
         }
 
+        /// <summary>いまの ひとまとまりの 音が ぜんぶ 見えるように けんばんを うごかす。</summary>
+        void ShowMimicRound()
+        {
+            var r = Mimic?.CurrentRound;
+            if (r == null || play == null) return;
+            int lo = 999, hi = -1;
+            foreach (var n in r) if (!n.IsRest) { lo = Mathf.Min(lo, n.midi + Mimic.Transpose); hi = Mathf.Max(hi, n.midi + Mimic.Transpose); }
+            if (hi >= 0) play.EnsureVisible(lo, hi);
+        }
+
         void OnSongFinished()
         {
+            int stars = Mimic != null ? Mimic.Stars : 0;
             audioOut?.PlaySfx("clear", 1f);
-            SetBubble("ぜんぶ ひけたね！ はなまる！");
+            SetBubble(stars >= 3 ? "ぜんぶ ひけたね！ はなまる！" : stars == 2 ? "ぜんぶ ひけたね！ じょうず！" : "さいごまで ひけたね！ よく がんばったね");
             _teacherBounce = 1.4f;
             _replayLabel.text = "もういちど";
+            _mimicNext.RemoveFromClassList("hidden");
+            _mimicDots.AddToClassList("hidden");
+            _mimicStars.RemoveFromClassList("hidden");
+            for (int i = 0; i < _mimicStars.childCount; i++) _mimicStars[i].EnableInClassList("result-star--off", i >= stars);
+            _nowDot = null;
             var save = SaveSystem.Data;
-            if (Mimic != null && !save.clearedSongs.Contains(Mimic.Song.id))
+            bool changed = false;
+            if (Mimic != null)
             {
-                save.clearedSongs.Add(Mimic.Song.id);
-                SaveSystem.Save();
+                if (!save.clearedSongs.Contains(Mimic.Song.id))
+                {
+                    save.clearedSongs.Add(Mimic.Song.id);
+                    changed = true;
+                }
+                if (save.RecordMimicStars(Mimic.Song.id, stars)) changed = true;
             }
+            if (changed) SaveSystem.Save();
+            if (stars >= 3) PlayConfetti();
+            WebBridge.Vibrate(40);
         }
 
         void SetBubble(string text)
@@ -632,13 +801,27 @@ namespace Piamo
             if (Mimic == null) return;
             int n = Mimic.RoundLength;
             while (_mimicDots.childCount < n) UIParts.El("dot", _mimicDots);
+            var st = Mimic.Current;
+            bool all = st == MimicGame.State.Cleared || st == MimicGame.State.Finished;
+            VisualElement now = null;
             for (int i = 0; i < _mimicDots.childCount; i++)
             {
                 var d = _mimicDots[i];
                 d.style.display = i < n ? DisplayStyle.Flex : DisplayStyle.None;
-                bool on = Mimic.Current == MimicGame.State.Cleared || Mimic.Current == MimicGame.State.Finished || i < Mimic.Progress;
-                d.EnableInClassList("dot--on", on);
+                if (i >= n) continue;
+                // ひけた音は その音の いろ、おてほんで 鳴った音は うすく、つぎに ひく音は ぴょこぴょこ
+                bool done = all || (st == MimicGame.State.Listen && i < Mimic.Progress);
+                bool demo = !done && st == MimicGame.State.Demo && i < Mimic.DemoPlayed;
+                bool isNow = st == MimicGame.State.Listen && i == Mimic.Progress;
+                d.EnableInClassList("dot--on", done);
+                d.EnableInClassList("dot--demo", demo);
+                d.EnableInClassList("dot--now", isNow);
+                if (done || demo) d.style.backgroundColor = NoteUtil.NoteColor(Mimic.RoundNote(i));
+                else d.style.backgroundColor = StyleKeyword.Null;
+                if (isNow) now = d;
+                else d.style.scale = StyleKeyword.Null;
             }
+            _nowDot = now;
             _mimicTitle.text = Mimic.Song.random
                 ? $"{Mimic.Song.title}  {Mimic.RoundIndex + 1} / {MimicGame.RandomRounds}"
                 : $"{Mimic.Song.title}  {Mimic.RoundIndex + 1} / {Mimic.Rounds.Count}";
@@ -651,20 +834,32 @@ namespace Piamo
             bool paused = SettingsOpen || DialogOpen || !_instPopup.ClassListContains("hidden");
             if (Mode == PlayMode.Mimic && Mimic != null && !paused)
             {
-                Mimic.Update(dt * MimicTimeScale);
-                play.view.SetHint(Mimic.HintKey);
+                // えらんだ 楽器の 音が よみこめるまで、おてほんを まつ（3 びょうまで）
+                bool loading = Mimic.Current == MimicGame.State.Intro && audioOut != null && !audioOut.InstrumentLoaded && _mimicLoadWait < 3f;
+                if (loading) _mimicLoadWait += dt;
+                else Mimic.Update(dt * MimicTimeScale);
+                if (Mimic != null) play.view.SetHint(Mimic.HintKey);
             }
-            else if (Mode != PlayMode.Mimic && play != null && play.view.HintKey >= 0) play.view.SetHint(-1);
+            else if (Mode == PlayMode.Free && play != null && play.view.HintKey >= 0) play.view.SetHint(-1);
             UpdatePerform(dt, paused);
+            UpdateFree(dt, paused);
 
-            // 先生・マスコットの うごき
+            // スタンプが もらえた おしらせは、しばらく したら しまう
+            if (_earnTimer > 0f)
+            {
+                _earnTimer -= dt;
+                if (_earnTimer <= 0f) _earnBanner.AddToClassList("hidden");
+            }
+
+            // 先生の うごき・つぎに ひく ドット
             if (_bubbleTimer > 0f)
             {
                 _bubbleTimer -= dt;
                 float s = 1f + 0.08f * Mathf.Sin(Mathf.Clamp01(_bubbleTimer / 0.25f) * Mathf.PI);
                 _mimicBubble.style.scale = new Scale(new Vector2(s, s));
             }
-            float bob = Mathf.Sin(Time.unscaledTime * 2.2f) * 6f;
+            bool still = SaveSystem.Settings.reduceMotion;
+            float bob = still ? 0f : Mathf.Sin(Time.unscaledTime * 2.2f) * 6f;
             if (_teacherBounce > 0f)
             {
                 _teacherBounce -= dt;
@@ -677,10 +872,13 @@ namespace Piamo
                 shake = Mathf.Sin(_teacherShake * 50f) * 8f * _teacherShake;
             }
             _teacher.style.translate = new Translate(shake, bob);
-            _freeMascot.style.translate = new Translate(0, Mathf.Sin(Time.unscaledTime * 2f + 1f) * 6f);
-            _freeMascot.style.rotate = new Rotate(Mathf.Sin(Time.unscaledTime * 1.3f) * 4f);
+            if (_nowDot != null)
+            {
+                float p = still ? 1.1f : 1f + 0.14f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 5f));
+                _nowDot.style.scale = new Scale(new Vector2(p, p));
+            }
 
-            if (Mode == PlayMode.Free)
+            if (Mode == PlayMode.Free && (_recorder == null || (!_recorder.Recording && !_recorder.Playing)))
             {
                 _freeTimer += dt;
                 if (_freeTimer > 9f)

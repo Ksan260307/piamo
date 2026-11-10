@@ -19,6 +19,8 @@ namespace Piamo
 
         /// <summary>子どもが鍵盤をおした（おてほんの音はふくまない）。</summary>
         public event Action<int> NotePlayed;
+        /// <summary>子どもが鍵盤を はなした（さいごの指が はなれた。ろくおん用）。</summary>
+        public event Action<int> NoteReleased;
         /// <summary>レイアウトやスクロールが変わった（ラベルの位置をなおす）。</summary>
         public event Action FramingChanged;
 
@@ -106,13 +108,21 @@ namespace Piamo
         public void EnsureVisible(int lowNote, int highNote)
         {
             if (Layout == null || !Framing.scrolling) return;
+            float off = OffsetToShow(lowNote, highNote);
+            if (!Mathf.Approximately(off, Framing.offset)) SetOffset(off);
+        }
+
+        /// <summary>lowNote〜highNote が見える スクロールの位置（いまの位置から いちばん すくなく うごかす）。</summary>
+        public float OffsetToShow(int lowNote, int highNote)
+        {
+            if (Layout == null) return 0f;
             int baseW = NoteUtil.WhiteNumber(Layout.Low);
             float lo = NoteUtil.WhiteNumber(lowNote) - baseW;
             float hi = NoteUtil.WhiteNumber(highNote) - baseW;
             float off = Framing.offset;
             if (lo < off) off = lo;
             if (hi > off + Framing.visible - 1) off = hi - Framing.visible + 1;
-            if (!Mathf.Approximately(off, Framing.offset)) SetOffset(off);
+            return off;
         }
 
         void Reframe()
@@ -146,14 +156,24 @@ namespace Piamo
         {
             if (!_holders.TryGetValue(midi, out var set)) return;
             if (!set.Remove(pointer)) return;
-            if (set.Count == 0 && !_demoDown.Contains(midi))
+            if (set.Count > 0) return;
+            if (!_demoDown.Contains(midi))
             {
                 audioOut?.NoteOff(midi);
                 view.SetPressed(midi, false);
             }
+            NoteReleased?.Invoke(midi);
         }
 
         public bool IsHeld(int midi) => _holders.TryGetValue(midi, out var s) && s.Count > 0;
+
+        /// <summary>いま 子どもが おさえている 鍵盤（ひくい順）。</summary>
+        public void HeldNotes(List<int> into)
+        {
+            into.Clear();
+            foreach (var kv in _holders) if (kv.Value.Count > 0) into.Add(kv.Key);
+            into.Sort();
+        }
 
         /// <summary>おてほんの音（light: 鍵盤もしずめて ひからせる。velocity: 音の大きさ 0〜1）。</summary>
         public void DemoDown(int midi, bool light, float velocity = 0.95f)

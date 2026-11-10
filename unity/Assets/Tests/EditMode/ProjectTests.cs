@@ -173,7 +173,7 @@ namespace Piamo.Tests
             foreach (var info in InstrumentCatalog.All) Assert.IsNotNull(ui.Icon("inst_" + info.id), info.id);
             foreach (var i in new[] { "back", "gear", "piano", "stamp", "left", "right", "minus", "plus", "star", "note1", "note2", "hint", "ear", "songs",
                          "volume_low", "volume_high", "sec_sound", "sec_keys", "sec_mimic", "sec_screen", "sec_parents",
-                         "play", "pause", "again", "speed", "sec_perform" })
+                         "play", "pause", "again", "speed", "sec_perform", "rec", "stop", "next", "pedal" })
                 Assert.IsNotNull(ui.Icon(i), i);
         }
 
@@ -260,7 +260,7 @@ namespace Piamo.Tests
             Assert.IsTrue(ui.play.backdrop != null);
             Assert.IsTrue(ui.audioOut.bank != null);
             var sfx = ui.audioOut.sfx.Select(s => s.name).ToList();
-            foreach (var n in new[] { "tap", "back", "open", "stamp", "stamp_big", "success", "clear", "hint", "earn", "page", "listen", "oops" })
+            foreach (var n in new[] { "tap", "back", "open", "stamp", "stamp_big", "success", "clear", "hint", "earn", "page", "listen", "oops", "count", "count_go" })
                 CollectionAssert.Contains(sfx, n);
             Assert.IsNotNull(ui.document.visualTreeAsset);
         }
@@ -273,8 +273,27 @@ namespace Piamo.Tests
             foreach (var n in new[] { "menu", "play", "stamps", "settings", "btn-play", "btn-stamps", "btn-settings",
                          "play-back", "stamps-back", "settings-back", "play-settings", "tab-free", "tab-mimic", "tab-perform", "keyboard-area",
                          "perform-panel", "perform-list", "perform-lane", "perform-play", "perform-restart", "perform-speed", "perform-change",
-                         "perform-mode-listen", "perform-mode-along", "perform-mode-step", "perform-again", "perform-other" })
+                         "perform-mode-listen", "perform-mode-along", "perform-mode-step", "perform-again", "perform-other",
+                         "free-rec", "free-playback", "free-pedal", "mimic-next", "mimic-speed", "mimic-inst", "mimic-meter",
+                         "perform-inst", "perform-paused", "perform-resume", "perform-combo", "perform-lines", "perform-bursts",
+                         "perform-slow", "perform-next", "perform-result-record", "perform-source", "perform-meter",
+                         "detail-prev", "detail-next", "menu-meter", "menu-stamp-count", "menu-recent" })
                 Assert.IsNotNull(root.Q(n), n);
+        }
+
+        [Test]
+        public void EveryElementTheCodeLooksUpIsInTheUxml()
+        {
+            // 画面の コードが 名前で さがす 要素（_root.Q("…") と SetIcon("…", …)）が、ぜんぶ UXML に ある
+            var root = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/UI/Main.uxml").Instantiate();
+            var rx = new Regex("_root\\.Q(?:<\\w+>)?\\(\"([^\"]+)\"\\)|\\bSetIcon\\(\"([^\"]+)\",");
+            var names = new HashSet<string>();
+            foreach (var path in Directory.GetFiles("Assets/Scripts/UI", "*.cs"))
+                foreach (Match m in rx.Matches(File.ReadAllText(path)))
+                    names.Add(m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value);
+            Assert.Greater(names.Count, 60);
+            var missing = names.Where(n => root.Q(n) == null).ToList();
+            Assert.IsEmpty(missing, "UXML に ない: " + string.Join(", ", missing));
         }
     }
 }
